@@ -166,16 +166,23 @@ async function upsertUserProfile(user) {
 
   const pagoRef = doc(db, "pagos", getPaymentDocId(user.uid));
   const pagoSnap = await getDoc(pagoRef);
+
   if (!pagoSnap.exists()) {
     await setDoc(pagoRef, {
       uid: user.uid,
       bloque: state.bloqueActual,
       valor: 10000,
-      estado: "pendiente",
-      metodo: "pendiente",
+      estado: "pendiente_pago",
+      metodo: "nequi",
       referencia: "",
+      soporteUrl: "",
+      soportePath: "",
+      observacionUsuario: "",
+      observacionAdmin: "",
       fecha_registro: serverTimestamp(),
-      fecha_validacion: null
+      fecha_solicitud: null,
+      fecha_validacion: null,
+      revisadoPor: ""
     }, { merge: true });
   }
 }
@@ -193,22 +200,131 @@ function renderProfile() {
 
 function renderPaymentUI() {
   const pago = currentPayment();
-  const aprobado = isPaymentApproved();
-  el.kpiPago.textContent = aprobado ? "Aprobado" : "Pendiente";
-  el.kpiPagoDetalle.textContent = aprobado ? "Ya puedes pronosticar esta fecha" : "Debes validar tu pago para habilitar pronósticos";
-  el.paymentStateText.textContent = pago?.estado || "pendiente";
-  el.paymentStatusBadge.textContent = aprobado ? "Aprobado" : "Pendiente";
-  el.paymentStatusBadge.className = `pill ${aprobado ? "pill-accent" : ""}`;
-  el.paymentBanner.className = `inline-status ${aprobado ? "ok" : "pending"}`;
-  el.paymentBanner.innerHTML = aprobado
-    ? `<strong>Pago validado.</strong><br>Tu acceso a los pronósticos del bloque está habilitado.`
-    : `<strong>Pago pendiente.</strong><br>No podrás guardar pronósticos hasta que un administrador apruebe tu pago del bloque.`;
+  const estado = pago?.estado ?? "pendiente_pago";
+  const aprobado = estado === "aprobado";
+  const enRevision = estado === "pendiente_revision";
+  const rechazado = estado === "rechazado";
 
-  el.paymentStateBox.innerHTML = aprobado
-    ? `<h4>Pago confirmado</h4><p>Tu aporte para la fecha activa ya fue validado por administración.</p>`
-    : `<h4>Pago en espera</h4><p>Cuando administración apruebe tu pago, se habilitará el registro y actualización de pronósticos.</p>`;
+  el.kpiPago.textContent = aprobado ? "Aprobado" : enRevision ? "En revisión" : rechazado ? "Rechazado" : "Pendiente";
+  el.kpiPagoDetalle.textContent = aprobado
+    ? "Ya puedes pronosticar esta fecha"
+    : enRevision
+      ? "Tu comprobante fue enviado y está pendiente de revisión"
+      : rechazado
+        ? "Tu comprobante fue rechazado. Debes enviar uno nuevo"
+        : "Debes realizar y reportar tu pago para habilitar pronósticos";
+
+  el.paymentStateText.textContent = estado;
+
+  el.paymentStatusBadge.textContent = aprobado
+    ? "Aprobado"
+    : enRevision
+      ? "En revisión"
+      : rechazado
+        ? "Rechazado"
+        : "Pendiente";
+
+  el.paymentStatusBadge.className = `pill ${
+    aprobado ? "pill-accent" : enRevision ? "pill-warning" : rechazado ? "pill-danger" : ""
+  }`;
+
+  if (aprobado) {
+    el.paymentBanner.className = "inline-status ok";
+    el.paymentBanner.innerHTML = `
+      <strong>Pago validado.</strong><br>
+      Tu acceso a los pronósticos del bloque está habilitado.
+    `;
+    el.paymentStateBox.innerHTML = `
+      <h4>Pago confirmado</h4>
+      <p>Tu aporte para la fecha activa ya fue validado por administración.</p>
+    `;
+    return;
+  }
+
+  if (enRevision) {
+    el.paymentBanner.className = "inline-status pending";
+    el.paymentBanner.innerHTML = `
+      <strong>Comprobante enviado.</strong><br>
+      El administrador debe revisar tu soporte antes de habilitar los pronósticos.
+    `;
+    el.paymentStateBox.innerHTML = `
+      <h4>Pago en revisión</h4>
+      <p>Referencia: <strong>${pago?.referencia || "Sin referencia"}</strong></p>
+      <p>Tu comprobante ya fue reportado y está pendiente de validación.</p>
+      ${pago?.soporteUrl ? `<p><a href="${pago.soporteUrl}" target="_blank" rel="noopener noreferrer">Ver comprobante enviado</a></p>` : ""}
+    `;
+    return;
+  }
+
+  if (rechazado) {
+    el.paymentBanner.className = "inline-status pending";
+    el.paymentBanner.innerHTML = `
+      <strong>Comprobante rechazado.</strong><br>
+      Revisa la observación y envía un nuevo soporte.
+    `;
+  } else {
+    el.paymentBanner.className = "inline-status pending";
+    el.paymentBanner.innerHTML = `
+      <strong>Pago pendiente.</strong><br>
+      Realiza tu pago por Nequi o llave y luego reporta el comprobante.
+    `;
+  }
+
+  el.paymentStateBox.innerHTML = `
+    <h4>${rechazado ? "Volver a enviar pago" : "Pago pendiente"}</h4>
+    <p><strong>Valor:</strong> ${formatCOP(pago?.valor || 10000)}</p>
+    <p><strong>Nequi / Llave:</strong> 3003468482 </p>
+    <p><strong>Instrucción:</strong> realiza el pago y luego reporta el comprobante.</p>
+    ${rechazado && pago?.observacionAdmin ? `<p><strong>Observación admin:</strong> ${pago.observacionAdmin}</p>` : ""}
+    <div class="payment-proof-box">
+      <label for="paymentReferenceInput">Referencia o nombre del pagador</label>
+      <input id="paymentReferenceInput" type="text" placeholder="Ej: últimos 4 dígitos, nombre o referencia">
+      <label for="paymentSupportUrlInput">URL del comprobante</label>
+      <input id="paymentSupportUrlInput" type="url" placeholder="Pega aquí el enlace del comprobante o Drive">
+      <label for="paymentObservationInput">Observación</label>
+      <textarea id="paymentObservationInput" placeholder="Opcional"></textarea>
+      <button id="sendPaymentProofBtn" class="btn btn-primary">Ya pagué, enviar reporte</button>
+    </div>
+  `;
+
+  document.getElementById("sendPaymentProofBtn")?.addEventListener("click", sendPaymentProof);
 }
+async function sendPaymentProof() {
+  const pago = currentPayment();
 
+  if (!state.currentUser || !pago) {
+    alert("No se encontró el registro de pago del usuario.");
+    return;
+  }
+
+  const referencia = document.getElementById("paymentReferenceInput")?.value?.trim() || "";
+  const soporteUrl = document.getElementById("paymentSupportUrlInput")?.value?.trim() || "";
+  const observacionUsuario = document.getElementById("paymentObservationInput")?.value?.trim() || "";
+
+  if (!referencia) {
+    alert("Debes ingresar una referencia o nombre del pagador.");
+    return;
+  }
+
+  if (!soporteUrl) {
+    alert("Debes pegar la URL del comprobante.");
+    return;
+  }
+
+  try {
+    await updateDoc(doc(db, "pagos", getPaymentDocId(state.currentUser.uid)), {
+      estado: "pendiente_revision",
+      referencia,
+      soporteUrl,
+      observacionUsuario,
+      fecha_solicitud: serverTimestamp()
+    });
+
+    alert("Comprobante enviado correctamente. Queda pendiente de revisión del administrador.");
+  } catch (error) {
+    alert("No fue posible enviar el comprobante: " + error.message);
+  }
+}
 function recalcPoolFromPayments() {
   const pagos = [...state.pagosMap.values()].filter(p => p.bloque === state.bloqueActual && p.estado === "aprobado");
   const bruto = pagos.length * 10000;
@@ -381,8 +497,13 @@ function renderAdminPayments() {
   }
 
   const pagos = [...state.pagosMap.values()].filter(p => p.bloque === state.bloqueActual);
+
   if (!pagos.length) {
-    el.adminPaymentsContainer.innerHTML = `<div class="admin-row"><div class="admin-main">No hay pagos registrados aún.</div></div>`;
+    el.adminPaymentsContainer.innerHTML = `
+      <div class="admin-row">
+        <div class="admin-main">No hay pagos registrados aún.</div>
+      </div>
+    `;
     return;
   }
 
@@ -390,14 +511,31 @@ function renderAdminPayments() {
     <div class="admin-row">
       <div class="admin-main">
         <strong>${pago.nombre || pago.uid}</strong>
-        <div class="meta">${pago.email || pago.uid} · ${formatCOP(pago.valor || 10000)} · Estado: ${pago.estado}</div>
+        <div class="meta">
+          ${pago.email || pago.uid} · ${formatCOP(pago.valor || 10000)} · Estado: ${pago.estado || "pendiente_pago"}
+        </div>
+        <div class="meta">Referencia: ${pago.referencia || "Sin referencia"}</div>
+        <div class="meta">Observación usuario: ${pago.observacionUsuario || "Sin observación"}</div>
+        ${pago.soporteUrl ? `<div class="meta"><a href="${pago.soporteUrl}" target="_blank" rel="noopener noreferrer">Ver comprobante</a></div>` : `<div class="meta">Sin comprobante</div>`}
+        ${pago.observacionAdmin ? `<div class="meta">Obs. admin: ${pago.observacionAdmin}</div>` : ""}
       </div>
-      <button class="btn btn-secondary approve-payment-btn" data-payment-id="${pago.id}" ${pago.estado === "aprobado" ? "disabled" : ""}>${pago.estado === "aprobado" ? "Aprobado" : "Aprobar"}</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-secondary approve-payment-btn" data-payment-id="${pago.id}" ${pago.estado === "aprobado" ? "disabled" : ""}>
+          ${pago.estado === "aprobado" ? "Aprobado" : "Aprobar"}
+        </button>
+        <button class="btn btn-secondary reject-payment-btn" data-payment-id="${pago.id}">
+          Rechazar
+        </button>
+      </div>
     </div>
   `).join("");
 
   document.querySelectorAll(".approve-payment-btn").forEach(btn => {
     btn.addEventListener("click", () => approvePayment(btn.dataset.paymentId));
+  });
+
+  document.querySelectorAll(".reject-payment-btn").forEach(btn => {
+    btn.addEventListener("click", () => rejectPayment(btn.dataset.paymentId));
   });
 }
 
@@ -405,7 +543,19 @@ async function approvePayment(paymentId) {
   await updateDoc(doc(db, "pagos", paymentId), {
     estado: "aprobado",
     metodo: "manual_admin",
-    fecha_validacion: serverTimestamp()
+    fecha_validacion: serverTimestamp(),
+    revisadoPor: state.currentUser.uid,
+    observacionAdmin: ""
+  });
+}
+
+async function rejectPayment(paymentId) {
+  const motivo = prompt("Motivo del rechazo:", "Comprobante ilegible o no corresponde");
+  await updateDoc(doc(db, "pagos", paymentId), {
+    estado: "rechazado",
+    fecha_validacion: serverTimestamp(),
+    revisadoPor: state.currentUser.uid,
+    observacionAdmin: motivo || "Comprobante rechazado"
   });
 }
 
