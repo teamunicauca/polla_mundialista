@@ -636,14 +636,21 @@ function scorePrediction(predL, predV, realL, realV) {
 }
 
 async function calcularFecha() {
-  if (!state.currentUserDoc?.esAdmin) return;
+  if (!state.currentUserDoc?.esAdmin) {
+    alert("No tienes permisos de administrador");
+    return;
+  }
 
-  const partidosFinalizados = state.partidos.filter(p => p.bloque === state.bloqueActual && p.estado === "finalizado");
+  // Tomar TODOS los partidos finalizados (sin filtrar por bloque)
+  const partidosFinalizados = state.partidos.filter(p => p.estado === "finalizado");
+  
   if (!partidosFinalizados.length) {
     alert("No hay partidos finalizados para calcular.");
     return;
   }
 
+  console.log("Partidos a calcular:", partidosFinalizados.length);
+  
   const predSnap = await getDocs(collection(db, "predicciones"));
   const usuariosAcum = new Map();
   const batch = writeBatch(db);
@@ -671,16 +678,26 @@ async function calcularFecha() {
     acc.tendencias += result.tendencia;
   });
 
-  usuariosAcum.forEach((acc, uid) => {
-    batch.update(doc(db, "usuarios", uid), {
-      puntos_totales: acc.puntos,
-      cantidad_exactos: acc.exactos,
-      cantidad_tendencias: acc.tendencias
-    });
-  });
+  for (const [uid, acc] of usuariosAcum) {
+    const userRef = doc(db, "usuarios", uid);
+    const userSnap = await getDoc(userRef);
+    
+    if (userSnap.exists()) {
+      const puntosActuales = userSnap.data().puntos_totales || 0;
+      const exactosActuales = userSnap.data().cantidad_exactos || 0;
+      const tendenciasActuales = userSnap.data().cantidad_tendencias || 0;
+      
+      batch.update(userRef, {
+        puntos_totales: puntosActuales + acc.puntos,
+        cantidad_exactos: exactosActuales + acc.exactos,
+        cantidad_tendencias: tendenciasActuales + acc.tendencias
+      });
+    }
+  }
 
   await batch.commit();
   alert("Fecha calculada correctamente.");
+  console.log("✅ Cálculo completado");
 }
 
 el.calculateBtn?.addEventListener("click", calcularFecha);
