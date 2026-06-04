@@ -134,7 +134,9 @@ function getPaymentDocId(uid, bloque = state.bloqueActual) {
 }
 
 function currentPayment() {
-  return state.pagosMap.get(getPaymentDocId(state.currentUser.uid));
+  if (!state.currentUser) return null;
+  const docId = getPaymentDocId(state.currentUser.uid);
+  return state.pagosMap.get(docId);
 }
 
 function isPaymentApproved() {
@@ -200,30 +202,24 @@ function renderProfile() {
 
 function renderPaymentUI() {
   const pago = currentPayment();
-  const estado = pago?.estado ?? "pendiente_pago";
+  if (!pago) return;
+  
+  const estado = pago.estado ?? "pendiente_pago";
   const aprobado = estado === "aprobado";
   const enRevision = estado === "pendiente_revision";
   const rechazado = estado === "rechazado";
 
+  // Actualizar KPIs
   el.kpiPago.textContent = aprobado ? "Aprobado" : enRevision ? "En revisión" : rechazado ? "Rechazado" : "Pendiente";
   el.kpiPagoDetalle.textContent = aprobado
-    ? "Ya puedes pronosticar esta fecha"
+    ? "✅ Ya puedes pronosticar esta fecha"
     : enRevision
-      ? "Tu comprobante fue enviado y está pendiente de revisión"
+      ? "⏳ Tu comprobante está pendiente de revisión"
       : rechazado
-        ? "Tu comprobante fue rechazado. Debes enviar uno nuevo"
-        : "Debes realizar y reportar tu pago para habilitar pronósticos";
+        ? "❌ Comprobante rechazado. Debes enviar uno nuevo"
+        : "💰 Debes realizar y reportar tu pago";
 
-  el.paymentStateText.textContent = estado;
-
-  el.paymentStatusBadge.textContent = aprobado
-    ? "Aprobado"
-    : enRevision
-      ? "En revisión"
-      : rechazado
-        ? "Rechazado"
-        : "Pendiente";
-
+  el.paymentStatusBadge.textContent = aprobado ? "Aprobado" : enRevision ? "En revisión" : rechazado ? "Rechazado" : "Pendiente";
   el.paymentStatusBadge.className = `pill ${
     aprobado ? "pill-accent" : enRevision ? "pill-warning" : rechazado ? "pill-danger" : ""
   }`;
@@ -231,12 +227,13 @@ function renderPaymentUI() {
   if (aprobado) {
     el.paymentBanner.className = "inline-status ok";
     el.paymentBanner.innerHTML = `
-      <strong>Pago validado.</strong><br>
-      Tu acceso a los pronósticos del bloque está habilitado.
+      <strong>✅ Pago validado.</strong><br>
+      Tu acceso a los pronósticos está habilitado.
     `;
     el.paymentStateBox.innerHTML = `
-      <h4>Pago confirmado</h4>
+      <h4>✅ Pago confirmado</h4>
       <p>Tu aporte para la fecha activa ya fue validado por administración.</p>
+      <p>Ya puedes realizar tus pronósticos en la pestaña "Pronósticos".</p>
     `;
     return;
   }
@@ -244,50 +241,59 @@ function renderPaymentUI() {
   if (enRevision) {
     el.paymentBanner.className = "inline-status pending";
     el.paymentBanner.innerHTML = `
-      <strong>Comprobante enviado.</strong><br>
-      El administrador debe revisar tu soporte antes de habilitar los pronósticos.
+      <strong>⏳ Comprobante enviado.</strong><br>
+      El administrador revisará tu soporte pronto.
     `;
     el.paymentStateBox.innerHTML = `
-      <h4>Pago en revisión</h4>
-      <p>Referencia: <strong>${pago?.referencia || "Sin referencia"}</strong></p>
-      <p>Tu comprobante ya fue reportado y está pendiente de validación.</p>
-      ${pago?.soporteUrl ? `<p><a href="${pago.soporteUrl}" target="_blank" rel="noopener noreferrer">Ver comprobante enviado</a></p>` : ""}
+      <h4>⏳ Pago en revisión</h4>
+      <p><strong>Referencia:</strong> ${pago.referencia || "Sin referencia"}</p>
+      <p>Tu comprobante está pendiente de validación.</p>
+      ${pago.soporteUrl ? `<p><a href="${pago.soporteUrl}" target="_blank" rel="noopener noreferrer">📎 Ver comprobante enviado</a></p>` : ""}
+      <p class="helper">Recibirás una notificación cuando sea aprobado.</p>
     `;
     return;
   }
 
-  if (rechazado) {
-    el.paymentBanner.className = "inline-status pending";
-    el.paymentBanner.innerHTML = `
-      <strong>Comprobante rechazado.</strong><br>
-      Revisa la observación y envía un nuevo soporte.
-    `;
-  } else {
-    el.paymentBanner.className = "inline-status pending";
-    el.paymentBanner.innerHTML = `
-      <strong>Pago pendiente.</strong><br>
-      Realiza tu pago por Nequi o llave y luego reporta el comprobante.
-    `;
-  }
+  // Formulario para pendiente_pago o rechazado
+  const motivoRechazo = rechazado && pago.observacionAdmin ? `<p class="danger"><strong>Motivo del rechazo:</strong> ${pago.observacionAdmin}</p>` : "";
+  
+  el.paymentBanner.className = "inline-status pending";
+  el.paymentBanner.innerHTML = rechazado
+    ? `<strong>❌ Comprobante rechazado.</strong><br>Revisa la observación y envía un nuevo soporte.`
+    : `<strong>💰 Pago pendiente.</strong><br>Realiza tu pago por Nequi y reporta el comprobante.`;
 
   el.paymentStateBox.innerHTML = `
-    <h4>${rechazado ? "Volver a enviar pago" : "Pago pendiente"}</h4>
-    <p><strong>Valor:</strong> ${formatCOP(pago?.valor || 10000)}</p>
-    <p><strong>Nequi / Llave:</strong> 3003468482 </p>
-    <p><strong>Instrucción:</strong> realiza el pago y luego reporta el comprobante.</p>
-    ${rechazado && pago?.observacionAdmin ? `<p><strong>Observación admin:</strong> ${pago.observacionAdmin}</p>` : ""}
+    <h4>${rechazado ? "📤 Reenviar comprobante" : "💳 Instrucciones de pago"}</h4>
+    ${motivoRechazo}
+    <div class="payment-details">
+      <p><strong>Valor:</strong> ${formatCOP(pago.valor || 10000)}</p>
+      <p><strong>📱 Nequi / Daviplata:</strong> <strong class="highlight">300 346 8482</strong></p>
+      <p><strong>🏦 Cuenta de ahorros Bancolombia:</strong> <strong class="highlight">07000012345</strong></p>
+      <p><strong>🔑 Llave Nequi:</strong> <strong class="highlight">3003468482</strong></p>
+      <p class="helper">💡 Después de pagar, completa el formulario con tu nombre o los últimos 4 dígitos de la transacción.</p>
+    </div>
+    
     <div class="payment-proof-box">
-      <label for="paymentReferenceInput">Referencia o nombre del pagador</label>
-      <input id="paymentReferenceInput" type="text" placeholder="Ej: últimos 4 dígitos, nombre o referencia">
-      <label for="paymentSupportUrlInput">URL del comprobante</label>
-      <input id="paymentSupportUrlInput" type="url" placeholder="Pega aquí el enlace del comprobante o Drive">
-      <label for="paymentObservationInput">Observación</label>
-      <textarea id="paymentObservationInput" placeholder="Opcional"></textarea>
-      <button id="sendPaymentProofBtn" class="btn btn-primary">Ya pagué, enviar reporte</button>
+      <label for="paymentReferenceInput">🔖 Tu nombre o referencia del pago *</label>
+      <input id="paymentReferenceInput" type="text" placeholder="Ej: Juan Pérez o 1234" value="${pago.referencia || ""}">
+      
+      <label for="paymentSupportUrlInput">🔗 URL del comprobante (Drive, Imgur, etc.) *</label>
+      <input id="paymentSupportUrlInput" type="url" placeholder="https://drive.google.com/..." value="${pago.soporteUrl || ""}">
+      
+      <label for="paymentObservationInput">📝 Observación (opcional)</label>
+      <textarea id="paymentObservationInput" placeholder="Ej: Pago desde Nequi, transacción #123456">${pago.observacionUsuario || ""}</textarea>
+      
+      <button id="sendPaymentProofBtn" class="btn btn-primary">${rechazado ? "Reenviar comprobante" : "✅ Ya pagué, enviar comprobante"}</button>
     </div>
   `;
 
-  document.getElementById("sendPaymentProofBtn")?.addEventListener("click", sendPaymentProof);
+  // Remover event listener viejo si existe y agregar nuevo
+  const oldBtn = document.getElementById("sendPaymentProofBtn");
+  if (oldBtn) {
+    const newBtn = oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+    newBtn.addEventListener("click", sendPaymentProof);
+  }
 }
 async function sendPaymentProof() {
   const pago = currentPayment();
@@ -312,19 +318,52 @@ async function sendPaymentProof() {
   }
 
   try {
-    await updateDoc(doc(db, "pagos", getPaymentDocId(state.currentUser.uid)), {
+    // Obtener el documento actual completo
+    const pagoRef = doc(db, "pagos", getPaymentDocId(state.currentUser.uid));
+    const pagoSnap = await getDoc(pagoRef);
+    
+    if (!pagoSnap.exists()) {
+      alert("Error: No se encontró tu registro de pago. Contacta al administrador.");
+      return;
+    }
+
+    const pagoActual = pagoSnap.data();
+
+    // Actualizar SOLO los campos necesarios, manteniendo los demás
+    await updateDoc(pagoRef, {
       estado: "pendiente_revision",
-      referencia,
-      soporteUrl,
-      observacionUsuario,
-      fecha_solicitud: serverTimestamp()
+      referencia: referencia,
+      soporteUrl: soporteUrl,
+      observacionUsuario: observacionUsuario,
+      fecha_solicitud: serverTimestamp(),
+      // Mantener campos existentes
+      uid: pagoActual.uid,
+      bloque: pagoActual.bloque,
+      valor: pagoActual.valor,
+      metodo: pagoActual.metodo || "nequi",
+      soportePath: pagoActual.soportePath || "",
+      fecha_registro: pagoActual.fecha_registro,
+      fecha_validacion: pagoActual.fecha_validacion || null,
+      revisadoPor: pagoActual.revisadoPor || "",
+      observacionAdmin: pagoActual.observacionAdmin || ""
     });
 
-    alert("Comprobante enviado correctamente. Queda pendiente de revisión del administrador.");
+    alert("✅ Comprobante enviado correctamente. Queda pendiente de revisión del administrador.");
+    
+    // Limpiar el formulario
+    if (document.getElementById("paymentReferenceInput")) 
+      document.getElementById("paymentReferenceInput").value = "";
+    if (document.getElementById("paymentSupportUrlInput")) 
+      document.getElementById("paymentSupportUrlInput").value = "";
+    if (document.getElementById("paymentObservationInput")) 
+      document.getElementById("paymentObservationInput").value = "";
+      
   } catch (error) {
-    alert("No fue posible enviar el comprobante: " + error.message);
+    console.error("Error al enviar comprobante:", error);
+    alert("❌ No fue posible enviar el comprobante: " + error.message);
   }
 }
+
 function recalcPoolFromPayments() {
   const pagos = [...state.pagosMap.values()].filter(p => p.bloque === state.bloqueActual && p.estado === "aprobado");
   const bruto = pagos.length * 10000;
