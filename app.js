@@ -343,64 +343,118 @@ function recalcPoolFromPayments() {
 
 function renderMatches() {
   const approved = isPaymentApproved();
-  el.matchesGateMessage.innerHTML = approved ? "" : `<div class="card-gate">Tu pago del bloque está pendiente. Puedes ver los partidos, pero no guardar pronósticos hasta ser aprobado.</div>`;
+  el.matchesGateMessage.innerHTML = approved ? "" : `<div class="card-gate">⚠️ Tu pago de esta fase está pendiente. Puedes ver los partidos, pero no guardar pronósticos hasta ser aprobado.</div>`;
 
-  el.matchesContainer.innerHTML = state.partidos.map(partido => {
+  // Contar pronósticos realizados
+  const totalPartidos = state.partidos.length;
+  const pronosticados = state.partidos.filter(partido => {
+    const predId = `${state.currentUser.uid}_${partido.id}`;
+    return state.prediccionesMap.has(predId);
+  }).length;
+  
+  // Mostrar barra de progreso
+  const progressPercent = totalPartidos > 0 ? (pronosticados / totalPartidos) * 100 : 0;
+  const progressHtml = `
+    <div class="progress-container glass-card">
+      <div class="progress-header">
+        <span>📊 Progreso de pronósticos</span>
+        <strong>${pronosticados} / ${totalPartidos} partidos</strong>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+      </div>
+      <p class="progress-hint">${progressPercent === 100 ? '🎉 ¡Completaste todos los pronósticos de esta fase!' : '💡 Recuerda: puedes modificar tus pronósticos hasta 1 hora antes del partido'}</p>
+    </div>
+  `;
+
+  let matchesHtml = progressHtml;
+  matchesHtml += `<div class="cards-grid">`;
+  
+  matchesHtml += state.partidos.map(partido => {
     const date = partido.fecha_hora.toDate();
     const countdown = getCountdown(date);
     const predId = `${state.currentUser.uid}_${partido.id}`;
     const pred = state.prediccionesMap.get(predId);
-    const local = pred?.goles_pred_local ?? 0;
-    const visita = pred?.goles_pred_visita ?? 0;
+    const tienePrediccion = !!pred;
+    const local = pred?.goles_pred_local ?? '';
+    const visita = pred?.goles_pred_visita ?? '';
     const locked = countdown.closed || !approved;
-    const reasonBadge = countdown.closed
-      ? `<span class="badge danger">Pronósticos cerrados</span>`
-      : approved
-        ? `<span class="badge success">Habilitado</span>`
-        : `<span class="badge warning">Pago pendiente</span>`;
+    
+    // Determinar badge de estado
+    let statusBadge = '';
+    if (countdown.closed) {
+      statusBadge = `<span class="badge danger">🔒 Cerrado</span>`;
+    } else if (!approved) {
+      statusBadge = `<span class="badge warning">💰 Pago pendiente</span>`;
+    } else if (tienePrediccion) {
+      statusBadge = `<span class="badge success">✅ Pronosticado</span>`;
+    } else {
+      statusBadge = `<span class="badge info">⚽ Por pronosticar</span>`;
+    }
+    
+    // Clase especial si ya tiene pronóstico
+    const cardClass = tienePrediccion && !locked ? 'match-card predicted' : 'match-card';
+    
+    // Mostrar valor actual del input
+    const localValue = local !== '' ? local : '';
+    const visitaValue = visita !== '' ? visita : '';
 
     return `
-      <article class="glass-card match-card">
+      <article class="${cardClass} glass-card">
         <div class="match-head">
           <div>
             <div class="meta">${formatDateTime(date)}</div>
-            <div class="countdown">${countdown.text}</div>
+            <div class="countdown ${countdown.closed ? 'closed' : ''}">${countdown.text}</div>
           </div>
-          ${reasonBadge}
+          ${statusBadge}
         </div>
 
         <div class="team-block">
-          <div class="team-line"><span><span class="flag">${getFlagEmoji(partido.equipo_local)}</span> ${partido.equipo_local}</span></div>
-          <div class="team-line"><span><span class="flag">${getFlagEmoji(partido.equipo_visita)}</span> ${partido.equipo_visita}</span></div>
+          <div class="team-line">
+            <span class="flag">${getFlagEmoji(partido.equipo_local)}</span>
+            <strong>${partido.equipo_local}</strong>
+          </div>
+          <div class="team-line">
+            <span class="flag">${getFlagEmoji(partido.equipo_visita)}</span>
+            <strong>${partido.equipo_visita}</strong>
+          </div>
         </div>
 
         <div class="score-grid">
           <div class="score-box">
-            <label for="local_${partido.id}">Goles local</label>
+            <label>Goles local</label>
             <div class="stepper">
-              <button data-step="down" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>-</button>
-              <input id="local_${partido.id}" type="number" min="0" max="20" value="${local}" ${locked ? "disabled" : ""}>
-              <button data-step="up" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>+</button>
+              <button class="step-btn" data-step="down" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>-</button>
+              <input type="number" id="local_${partido.id}" class="score-input ${tienePrediccion ? 'has-value' : ''}" 
+                     min="0" max="20" value="${localValue}" placeholder="?" ${locked ? "disabled" : ""}>
+              <button class="step-btn" data-step="up" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>+</button>
             </div>
           </div>
           <div class="score-box">
-            <label for="visita_${partido.id}">Goles visita</label>
+            <label>Goles visita</label>
             <div class="stepper">
-              <button data-step="down" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>-</button>
-              <input id="visita_${partido.id}" type="number" min="0" max="20" value="${visita}" ${locked ? "disabled" : ""}>
-              <button data-step="up" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>+</button>
+              <button class="step-btn" data-step="down" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>-</button>
+              <input type="number" id="visita_${partido.id}" class="score-input ${tienePrediccion ? 'has-value' : ''}" 
+                     min="0" max="20" value="${visitaValue}" placeholder="?" ${locked ? "disabled" : ""}>
+              <button class="step-btn" data-step="up" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>+</button>
             </div>
           </div>
         </div>
 
         <div class="match-footer">
-          <span class="pill">${partido.bloque}</span>
-          ${locked ? "" : `<button class="btn btn-primary save-prediction-btn" data-match-id="${partido.id}">${pred ? "Actualizar pronóstico" : "Guardar pronóstico"}</button>`}
+          <span class="pill fase-pill">${partido.bloque === 'fecha_1' ? 'Fase 1' : partido.bloque === 'fecha_2' ? 'Fase 2' : 'Fase 3'}</span>
+          ${!locked && `<button class="btn btn-primary save-prediction-btn" data-match-id="${partido.id}">
+            ${tienePrediccion ? '🔄 Actualizar' : '✅ Guardar pronóstico'}
+          </button>`}
         </div>
       </article>
     `;
   }).join("");
+  
+  matchesHtml += `</div>`;
+  el.matchesContainer.innerHTML = matchesHtml;
 
+  // Agregar event listeners para los steppers
   el.matchesContainer.querySelectorAll("[data-step]").forEach(btn => {
     btn.addEventListener("click", () => {
       const input = document.getElementById(btn.dataset.input);
@@ -409,11 +463,11 @@ function renderMatches() {
     });
   });
 
+  // Agregar event listeners para guardar
   el.matchesContainer.querySelectorAll(".save-prediction-btn").forEach(btn => {
     btn.addEventListener("click", () => savePrediction(btn.dataset.matchId));
   });
 }
-
 async function savePrediction(matchId) {
   if (!isPaymentApproved()) {
     alert("Tu pago aún no ha sido aprobado.");
