@@ -308,58 +308,39 @@ async function sendPaymentProof() {
   const observacionUsuario = document.getElementById("paymentObservationInput")?.value?.trim() || "";
 
   if (!referencia) {
-    alert("Debes ingresar una referencia o nombre del pagador.");
+    alert("❌ Debes ingresar una referencia o nombre del pagador.");
     return;
   }
 
   if (!soporteUrl) {
-    alert("Debes pegar la URL del comprobante.");
+    alert("❌ Debes pegar la URL del comprobante.");
     return;
   }
 
   try {
-    // Obtener el documento actual completo
     const pagoRef = doc(db, "pagos", getPaymentDocId(state.currentUser.uid));
-    const pagoSnap = await getDoc(pagoRef);
     
-    if (!pagoSnap.exists()) {
-      alert("Error: No se encontró tu registro de pago. Contacta al administrador.");
-      return;
-    }
-
-    const pagoActual = pagoSnap.data();
-
-    // Actualizar SOLO los campos necesarios, manteniendo los demás
+    // ✅ SOLO actualizar los campos que cambiaron
     await updateDoc(pagoRef, {
       estado: "pendiente_revision",
       referencia: referencia,
       soporteUrl: soporteUrl,
       observacionUsuario: observacionUsuario,
-      fecha_solicitud: serverTimestamp(),
-      // Mantener campos existentes
-      uid: pagoActual.uid,
-      bloque: pagoActual.bloque,
-      valor: pagoActual.valor,
-      metodo: pagoActual.metodo || "nequi",
-      soportePath: pagoActual.soportePath || "",
-      fecha_registro: pagoActual.fecha_registro,
-      fecha_validacion: pagoActual.fecha_validacion || null,
-      revisadoPor: pagoActual.revisadoPor || "",
-      observacionAdmin: pagoActual.observacionAdmin || ""
+      fecha_solicitud: serverTimestamp()
     });
 
     alert("✅ Comprobante enviado correctamente. Queda pendiente de revisión del administrador.");
     
-    // Limpiar el formulario
-    if (document.getElementById("paymentReferenceInput")) 
-      document.getElementById("paymentReferenceInput").value = "";
-    if (document.getElementById("paymentSupportUrlInput")) 
-      document.getElementById("paymentSupportUrlInput").value = "";
-    if (document.getElementById("paymentObservationInput")) 
-      document.getElementById("paymentObservationInput").value = "";
-      
+    // Limpiar formulario
+    const refInput = document.getElementById("paymentReferenceInput");
+    const urlInput = document.getElementById("paymentSupportUrlInput");
+    const obsInput = document.getElementById("paymentObservationInput");
+    if (refInput) refInput.value = "";
+    if (urlInput) urlInput.value = "";
+    if (obsInput) obsInput.value = "";
+    
   } catch (error) {
-    console.error("Error al enviar comprobante:", error);
+    console.error("Error completo:", error);
     alert("❌ No fue posible enviar el comprobante: " + error.message);
   }
 }
