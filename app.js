@@ -632,24 +632,7 @@ async function rejectPayment(paymentId) {
   }
 }
 
-async function rejectPayment(paymentId) {
-  const motivo = prompt("Motivo del rechazo:", "Comprobante ilegible o no corresponde");
-  if (!motivo) return;
-  
-  try {
-    const pagoRef = doc(db, "pagos", paymentId);
-    await setDoc(pagoRef, {
-      estado: "rechazado",
-      fecha_validacion: serverTimestamp(),
-      revisadoPor: state.currentUser.uid,
-      observacionAdmin: motivo
-    }, { merge: true });
-    alert("✅ Pago rechazado correctamente");
-  } catch (error) {
-    console.error("Error al rechazar:", error);
-    alert("❌ Error al rechazar: " + error.message);
-  }
-}
+
 
 function renderAdminMatches() {
   if (!state.currentUserDoc?.esAdmin) {
