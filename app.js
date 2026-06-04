@@ -750,8 +750,85 @@ function clearListeners() {
   state.unsubscribers = [];
 }
 
+// ==================== SELECTOR DE FASES ====================
+function initFechaSelector() {
+  const selectorFecha = document.getElementById("selectorFecha");
+  if (!selectorFecha) return;
+  
+  selectorFecha.addEventListener("change", async (e) => {
+    const nuevaFecha = e.target.value;
+    if (state.bloqueActual === nuevaFecha) return;
+    
+    console.log(`📅 Cambiando de ${state.bloqueActual} a ${nuevaFecha}`);
+    state.bloqueActual = nuevaFecha;
+    
+    // Actualizar textos de UI
+    const faseLabel = document.getElementById("currentFaseLabel");
+    if (faseLabel) {
+      const nombres = {
+        fecha_1: "Fase 1",
+        fecha_2: "Fase 2", 
+        fecha_3: "Fase 3"
+      };
+      faseLabel.textContent = nombres[nuevaFecha] || nuevaFecha;
+    }
+    
+    // Actualizar el título en el dashboard
+    const dashboardPill = document.querySelector("#dashboardView .panel-head .pill");
+    if (dashboardPill) {
+      const nombres = {
+        fecha_1: "Fase 1",
+        fecha_2: "Fase 2", 
+        fecha_3: "Fase 3"
+      };
+      dashboardPill.textContent = nombres[nuevaFecha] || nuevaFecha;
+    }
+    
+    // Recargar todos los listeners con la nueva fecha
+    if (state.currentUser) {
+      clearListeners();
+      setupRealtime(state.currentUser);
+    }
+    
+    // Mostrar feedback visual
+    const toast = document.createElement("div");
+    toast.textContent = `📅 Cambiado a ${nombres[nuevaFecha] || nuevaFecha}`;
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 40px;
+      z-index: 9999;
+      animation: fadeOut 2s ease forwards;
+      font-size: 14px;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  });
+}
+
+// Agregar la animación CSS
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeOut {
+    0% { opacity: 1; transform: translateY(0); }
+    70% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+  }
+`;
+document.head.appendChild(style);
+
 function setupRealtime(user) {
   clearListeners();
+
+  // Actualizar el selector visualmente para mostrar la fecha actual
+  const selectorFecha = document.getElementById("selectorFecha");
+  if (selectorFecha && selectorFecha.value !== state.bloqueActual) {
+    selectorFecha.value = state.bloqueActual;
+  }
 
   state.unsubscribers.push(onSnapshot(doc(db, "usuarios", user.uid), snap => {
     state.currentUserDoc = snap.exists() ? snap.data() : null;
@@ -788,8 +865,12 @@ function setupRealtime(user) {
   const bloqueRef = doc(db, "bloques", state.bloqueActual);
   state.unsubscribers.push(onSnapshot(bloqueRef, async snap => {
     if (!snap.exists()) {
+      let nombreFecha = "Fecha 1";
+      if (state.bloqueActual === "fecha_2") nombreFecha = "Fecha 2";
+      if (state.bloqueActual === "fecha_3") nombreFecha = "Fecha 3";
+      
       await setDoc(bloqueRef, {
-        nombre: "Fecha 1",
+        nombre: nombreFecha,
         valor_apuesta: 10000,
         porcentaje_admin: 0.15,
         porcentaje_premio_1: 0.70,
@@ -820,4 +901,29 @@ onAuthStateChanged(auth, async user => {
   el.sidebar.classList.remove("hidden");
   showView("dashboardView");
   setupRealtime(user);
+  
+  // ===== INICIALIZAR SELECTOR DE FASES =====
+  initFechaSelector();
+  
+  // Actualizar label de fase actual en la vista de pagos
+  const faseLabel = document.getElementById("currentFaseLabel");
+  if (faseLabel) {
+    const nombres = {
+      fecha_1: "Fase 1",
+      fecha_2: "Fase 2", 
+      fecha_3: "Fase 3"
+    };
+    faseLabel.textContent = nombres[state.bloqueActual] || state.bloqueActual;
+  }
+  
+  // Actualizar el título en el dashboard
+  const dashboardPill = document.querySelector("#dashboardView .panel-head .pill");
+  if (dashboardPill) {
+    const nombres = {
+      fecha_1: "Fase 1",
+      fecha_2: "Fase 2", 
+      fecha_3: "Fase 3"
+    };
+    dashboardPill.textContent = nombres[state.bloqueActual] || state.bloqueActual;
+  }
 });
