@@ -321,3 +321,108 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
   margin-top: 0.5rem;
   color: var(--faint);
 }
+/* Barra de progreso */
+.progress-container {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, var(--surface), rgba(27, 76, 254, 0.05));
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.progress-bar-bg {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, var(--primary), var(--primary-2));
+  border-radius: 20px;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progress-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+
+/* Badge de estado */
+.badge.info {
+  background: rgba(107, 114, 128, 0.15);
+  border-color: rgba(107, 114, 128, 0.3);
+  color: #9ca3af;
+}
+
+/* Tarjetas con pronóstico */
+.match-card.predicted {
+  border-left: 3px solid var(--success);
+  background: linear-gradient(135deg, var(--surface), rgba(16, 185, 129, 0.05));
+}
+
+/* Inputs con valor */
+.score-input.has-value {
+  border-color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  font-weight: 600;
+}
+
+.score-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* Stepper buttons */
+.step-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 42px;
+  height: 44px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.step-btn:hover:not(:disabled) {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.step-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Countdown cerrado */
+.countdown.closed {
+  color: var(--danger);
+}
+
+/* Fase pill */
+.fase-pill {
+  background: rgba(27, 76, 254, 0.15);
+}
+
+/* Animación al guardar */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.match-card.predicted {
+  animation: pulse 0.3s ease;
+}
