@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polla Mundialista 2026 · Robusta</title>
+  <meta name="description" content="Polla Mundialista automatizada por fechas con pagos, ranking y panel admin." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#mainContent">Saltar al contenido</a>
+
+  <div class="app-shell">
+    <aside class="sidebar hidden" id="sidebar">
+      <div class="sidebar-top">
+        <div class="brand-wrap">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none" role="img" aria-label="Logo Polla Mundialista">
+              <circle cx="32" cy="32" r="26" stroke="currentColor" stroke-width="4"></circle>
+              <path d="M22 25h20M20 39c4-8 20-8 24 0" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+              <circle cx="32" cy="32" r="6" stroke="currentColor" stroke-width="3"></circle>
+            </svg>
+          </div>
+          <div>
+            <h1>Polla Mundialista</h1>
+            <p>Fecha 1 · Popayán</p>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Navegación principal">
+          <button class="nav-link active" data-view-target="dashboardView">Dashboard</button>
+          <button class="nav-link" data-view-target="matchesView">Pronósticos</button>
+          <button class="nav-link" data-view-target="paymentsView">Pagos</button>
+          <button class="nav-link" data-view-target="rankingView">Ranking</button>
+          <button class="nav-link hidden" id="adminNavBtn" data-view-target="adminView">Administrador</button>
+        </nav>
+      </div>
+
+      <div class="sidebar-bottom">
+        <div class="glass-card profile-card" id="userMini"></div>
+        <button class="btn btn-ghost" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <main class="main" id="mainContent">
+      <section class="view view-active" id="loginView">
+        <div class="login-shell glass-card">
+          <span class="pill pill-accent">Mundial 2026 · Bloques por fecha</span>
+          <h2>Pronostica, paga tu bloque y compite por el podio.</h2>
+          <p>Aplicación SPA con autenticación Google, ranking automático, control de pagos y cierre antifraude una hora antes de cada partido.</p>
+          <div class="hero-points">
+            <div class="hero-point"><strong>3 pts</strong><span>Marcador exacto</span></div>
+            <div class="hero-point"><strong>1 pt</strong><span>Tendencia</span></div>
+            <div class="hero-point"><strong>15%</strong><span>Administración</span></div>
+          </div>
+          <button class="btn btn-primary btn-lg" id="googleLoginBtn">Iniciar sesión con Google</button>
+          <small>Antes de publicar en GitHub Pages, reemplaza la configuración Firebase en <code>app.js</code>.</small>
+        </div>
+      </section>
+
+      <section class="view" id="dashboardView">
+        <header class="view-header">
+          <div>
+            <p class="eyebrow">Resumen del jugador</p>
+            <h2>Dashboard y reglamento</h2>
+          </div>
+          <button class="theme-toggle" id="themeToggle" type="button" aria-label="Cambiar tema">◐</button>
+        </header>
+
+        <div class="kpi-grid">
+          <article class="glass-card kpi-card">
+            <span>Mis puntos</span>
+            <strong id="kpiMisPuntos">0</strong>
+            <small>Acumulado general</small>
+          </article>
+          <article class="glass-card kpi-card">
+            <span>Mi posición</span>
+            <strong id="kpiMiPosicion">-</strong>
+            <small>Ranking en tiempo real</small>
+          </article>
+          <article class="glass-card kpi-card">
+            <span>Pozo bruto</span>
+            <strong id="kpiPozo">$0</strong>
+            <small>Participantes pagados</small>
+          </article>
+          <article class="glass-card kpi-card payment-kpi">
+            <span>Estado de pago</span>
+            <strong id="kpiPago">Pendiente</strong>
+            <small id="kpiPagoDetalle">Debes pagar para pronosticar</small>
+          </article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="glass-card panel-card">
+            <div class="panel-head">
+              <h3>Reglas del juego</h3>
+              <span class="pill">Fecha 1</span>
+            </div>
+            <ul class="rule-list">
+              <li>Valor por bloque: $10.000 COP.</li>
+              <li>Administración: 15% del pozo bruto.</li>
+              <li>Premios: 70% primer lugar, 15% segundo lugar.</li>
+              <li>Puntaje: exacto 3, tendencia 1, error 0.</li>
+              <li>Solo cuentan los 90 minutos más adición.</li>
+              <li>El cierre se aplica una hora antes del partido.</li>
+            </ul>
+          </article>
+
+          <article class="glass-card panel-card">
+            <div class="panel-head">
+              <h3>Desempates</h3>
+              <span class="pill">En cascada</span>
+            </div>
+            <ol class="rule-list ordered">
+              <li>Más puntos totales.</li>
+              <li>Más marcadores exactos.</li>
+              <li>Más tendencias acertadas.</li>
+              <li>Menor fecha de inscripción.</li>
+            </ol>
+            <div class="inline-status" id="paymentBanner"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="matchesView">
+        <header class="view-header">
+          <div>
+            <p class="eyebrow">Bloque activo</p>
+            <h2>Pronósticos disponibles</h2>
+          </div>
+        </header>
+        <div id="matchesGateMessage"></div>
+        <div id="matchesContainer" class="cards-grid"></div>
+      </section>
+
+      <section class="view" id="paymentsView">
+        <header class="view-header">
+          <div>
+            <p class="eyebrow">Control financiero</p>
+            <h2>Pagos del bloque</h2>
+          </div>
+        </header>
+
+        <div class="payments-grid">
+          <article class="glass-card panel-card">
+            <div class="panel-head">
+              <h3>Mi pago</h3>
+              <span class="pill" id="paymentStatusBadge">Pendiente</span>
+            </div>
+            <div class="payment-state" id="paymentStateBox"></div>
+            <div class="payment-meta-list">
+              <div><span>Valor</span><strong>$10.000 COP</strong></div>
+              <div><span>Bloque</span><strong>Fecha 1</strong></div>
+              <div><span>Estado</span><strong id="paymentStateText">Pendiente</strong></div>
+            </div>
+          </article>
+
+          <article class="glass-card panel-card">
+            <div class="panel-head">
+              <h3>Distribución del pozo</h3>
+              <span class="pill">Automática</span>
+            </div>
+            <div class="money-grid">
+              <div><span>Bruto</span><strong id="moneyBruto">$0</strong></div>
+              <div><span>Admin 15%</span><strong id="moneyAdmin">$0</strong></div>
+              <div><span>Premio 1</span><strong id="moneyPremio1">$0</strong></div>
+              <div><span>Premio 2</span><strong id="moneyPremio2">$0</strong></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="rankingView">
+        <header class="view-header">
+          <div>
+            <p class="eyebrow">Clasificación</p>
+            <h2>El podio</h2>
+          </div>
+        </header>
+        <div class="glass-card ranking-shell">
+          <div id="rankingContainer" class="ranking-list"></div>
+        </div>
+      </section>
+
+      <section class="view" id="adminView">
+        <header class="view-header">
+          <div>
+            <p class="eyebrow">Backoffice</p>
+            <h2>Panel de administrador</h2>
+          </div>
+        </header>
+
+        <div class="admin-grid">
+          <article class="glass-card panel-card">
+            <div class="panel-head">
+              <h3>Validar pagos</h3>
+              <span class="pill">Manual</span>
+            </div>
+            <div id="adminPaymentsContainer" class="admin-list"></div>
+          </article>
+
+          <article class="glass-card panel-card">
+            <div class="panel-head">
+              <h3>Resultados oficiales</h3>
+              <span class="pill">90 minutos</span>
+            </div>
+            <div id="adminMatchesContainer" class="admin-list"></div>
+            <button class="btn btn-primary" id="calculateBtn">Calcular fecha</button>
+            <p class="helper">El cálculo actualiza puntos, exactos y tendencias por usuario para la fecha activa.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
