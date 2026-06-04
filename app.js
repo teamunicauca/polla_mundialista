@@ -204,10 +204,11 @@ function renderPaymentUI() {
   const pago = currentPayment();
   if (!pago) return;
   
-  const estado = pago.estado ?? "pendiente_pago";
+  const estado = pago.estado ?? "pendiente";
   const aprobado = estado === "aprobado";
-  const enRevision = estado === "pendiente";
+  const enRevision = estado === "revision";  // ← CORREGIDO: "revision" no "pendiente"
   const rechazado = estado === "rechazado";
+  const pendiente = estado === "pendiente";   // ← NUEVO: estado pendiente
 
   // Actualizar KPIs
   el.kpiPago.textContent = aprobado ? "Aprobado" : enRevision ? "En revisión" : rechazado ? "Rechazado" : "Pendiente";
@@ -253,7 +254,7 @@ function renderPaymentUI() {
     return;
   }
 
-  // Formulario para pendiente_pago o rechazado
+  // Formulario para pendiente o rechazado
   const motivoRechazo = rechazado && pago.observacionAdmin ? `<p class="danger"><strong>Motivo:</strong> ${pago.observacionAdmin}</p>` : "";
   
   el.paymentBanner.className = "inline-status pending";
