@@ -372,7 +372,7 @@ function renderMatches() {
   let matchesHtml = progressHtml;
   matchesHtml += `<div class="cards-grid">`;
   
-  for (const partido of state.partidos) {
+  matchesHtml += state.partidos.map(partido => {
     const date = partido.fecha_hora.toDate();
     const countdown = getCountdown(date);
     const predId = `${state.currentUser.uid}_${partido.id}`;
@@ -380,12 +380,11 @@ function renderMatches() {
     const tienePrediccion = !!pred;
     const local = pred?.goles_pred_local ?? '';
     const visita = pred?.goles_pred_visita ?? '';
-    const isClosed = countdown.closed;
-    const isLocked = isClosed || !approved;
+    const locked = countdown.closed || !approved;
     
     // Determinar badge de estado
     let statusBadge = '';
-    if (isClosed) {
+    if (countdown.closed) {
       statusBadge = `<span class="badge danger">🔒 Cerrado</span>`;
     } else if (!approved) {
       statusBadge = `<span class="badge warning">💰 Pago pendiente</span>`;
@@ -396,22 +395,18 @@ function renderMatches() {
     }
     
     // Clase especial si ya tiene pronóstico
-    const cardClass = tienePrediccion && !isLocked ? 'match-card predicted' : 'match-card';
+    const cardClass = tienePrediccion && !locked ? 'match-card predicted' : 'match-card';
     
     // Mostrar valor actual del input
     const localValue = local !== '' ? local : '';
     const visitaValue = visita !== '' ? visita : '';
-    
-    const saveButtonHtml = !isLocked ? `<button class="btn btn-primary save-prediction-btn" data-match-id="${partido.id}">${tienePrediccion ? '🔄 Actualizar' : '✅ Guardar'}</button>` : '';
-    
-    const faseTexto = partido.bloque === 'fecha_1' ? 'Fase 1' : (partido.bloque === 'fecha_2' ? 'Fase 2' : 'Fase 3');
 
-    matchesHtml += `
+    return `
       <article class="${cardClass} glass-card">
         <div class="match-head">
           <div>
             <div class="meta">${formatDateTime(date)}</div>
-            <div class="countdown ${isClosed ? 'closed' : ''}">${countdown.text}</div>
+            <div class="countdown ${countdown.closed ? 'closed' : ''}">${countdown.text}</div>
           </div>
           ${statusBadge}
         </div>
@@ -431,47 +426,47 @@ function renderMatches() {
           <div class="score-box">
             <label>Goles local</label>
             <div class="stepper">
-              <button class="step-btn" data-step="down" data-input="local_${partido.id}" ${isLocked ? "disabled" : ""}>-</button>
+              <button class="step-btn" data-step="down" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>-</button>
               <input type="number" id="local_${partido.id}" class="score-input ${tienePrediccion ? 'has-value' : ''}" 
-                     min="0" max="20" value="${localValue}" placeholder="?" ${isLocked ? "disabled" : ""}>
-              <button class="step-btn" data-step="up" data-input="local_${partido.id}" ${isLocked ? "disabled" : ""}>+</button>
+                     min="0" max="20" value="${localValue}" placeholder="?" ${locked ? "disabled" : ""}>
+              <button class="step-btn" data-step="up" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>+</button>
             </div>
           </div>
           <div class="score-box">
             <label>Goles visita</label>
             <div class="stepper">
-              <button class="step-btn" data-step="down" data-input="visita_${partido.id}" ${isLocked ? "disabled" : ""}>-</button>
+              <button class="step-btn" data-step="down" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>-</button>
               <input type="number" id="visita_${partido.id}" class="score-input ${tienePrediccion ? 'has-value' : ''}" 
-                     min="0" max="20" value="${visitaValue}" placeholder="?" ${isLocked ? "disabled" : ""}>
-              <button class="step-btn" data-step="up" data-input="visita_${partido.id}" ${isLocked ? "disabled" : ""}>+</button>
+                     min="0" max="20" value="${visitaValue}" placeholder="?" ${locked ? "disabled" : ""}>
+              <button class="step-btn" data-step="up" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>+</button>
             </div>
           </div>
         </div>
 
         <div class="match-footer">
-          <span class="pill fase-pill">${faseTexto}</span>
-          ${saveButtonHtml}
+          <span class="pill fase-pill">${partido.bloque === 'fecha_1' ? 'Fase 1' : partido.bloque === 'fecha_2' ? 'Fase 2' : 'Fase 3'}</span>
+          ${!locked && `<button class="btn btn-primary save-prediction-btn" data-match-id="${partido.id}">
+            ${tienePrediccion ? '🔄 Actualizar' : '✅ Guardar'}
+          </button>`}
         </div>
       </article>
     `;
-  }
+  }).join("");
   
   matchesHtml += `</div>`;
   el.matchesContainer.innerHTML = matchesHtml;
 
   // Agregar event listeners para los steppers
-  document.querySelectorAll("[data-step]").forEach(btn => {
+  el.matchesContainer.querySelectorAll("[data-step]").forEach(btn => {
     btn.addEventListener("click", () => {
       const input = document.getElementById(btn.dataset.input);
-      if (input) {
-        const current = Number(input.value || 0);
-        input.value = btn.dataset.step === "up" ? current + 1 : Math.max(0, current - 1);
-      }
+      const current = Number(input.value || 0);
+      input.value = btn.dataset.step === "up" ? current + 1 : Math.max(0, current - 1);
     });
   });
 
   // Agregar event listeners para guardar
-  document.querySelectorAll(".save-prediction-btn").forEach(btn => {
+  el.matchesContainer.querySelectorAll(".save-prediction-btn").forEach(btn => {
     btn.addEventListener("click", () => savePrediction(btn.dataset.matchId));
   });
 }
