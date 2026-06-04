@@ -352,18 +352,20 @@ function renderMatches() {
     return state.prediccionesMap.has(predId);
   }).length;
   
-  // Mostrar barra de progreso
   const progressPercent = totalPartidos > 0 ? (pronosticados / totalPartidos) * 100 : 0;
+  
+  // Barra de progreso COMPACTA - horizontal
   const progressHtml = `
-    <div class="progress-container glass-card">
-      <div class="progress-header">
-        <span>📊 Progreso de pronósticos</span>
-        <strong>${pronosticados} / ${totalPartidos} partidos</strong>
+    <div class="progress-compact">
+      <div class="progress-stats">
+        <span class="progress-label">📊 Progreso</span>
+        <span class="progress-count">${pronosticados} / ${totalPartidos}</span>
+        <span class="progress-percent">${Math.round(progressPercent)}%</span>
       </div>
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
       </div>
-      <p class="progress-hint">${progressPercent === 100 ? '🎉 ¡Completaste todos los pronósticos de esta fase!' : '💡 Recuerda: puedes modificar tus pronósticos hasta 1 hora antes del partido'}</p>
+      ${progressPercent === 100 ? '<span class="progress-complete">🎉 ¡Completaste todos!</span>' : '<span class="progress-hint">💡 Modificable hasta 1h antes</span>'}
     </div>
   `;
 
@@ -444,7 +446,7 @@ function renderMatches() {
         <div class="match-footer">
           <span class="pill fase-pill">${partido.bloque === 'fecha_1' ? 'Fase 1' : partido.bloque === 'fecha_2' ? 'Fase 2' : 'Fase 3'}</span>
           ${!locked && `<button class="btn btn-primary save-prediction-btn" data-match-id="${partido.id}">
-            ${tienePrediccion ? '🔄 Actualizar' : '✅ Guardar pronóstico'}
+            ${tienePrediccion ? '🔄 Actualizar' : '✅ Guardar'}
           </button>`}
         </div>
       </article>
