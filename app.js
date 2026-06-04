@@ -206,11 +206,9 @@ function renderPaymentUI() {
   
   const estado = pago.estado ?? "pendiente";
   const aprobado = estado === "aprobado";
-  const enRevision = estado === "revision";  // ← CORREGIDO: "revision" no "pendiente"
+  const enRevision = estado === "revision";
   const rechazado = estado === "rechazado";
-  const pendiente = estado === "pendiente";   // ← NUEVO: estado pendiente
 
-  // Actualizar KPIs
   el.kpiPago.textContent = aprobado ? "Aprobado" : enRevision ? "En revisión" : rechazado ? "Rechazado" : "Pendiente";
   el.kpiPagoDetalle.textContent = aprobado
     ? "✅ Ya puedes pronosticar esta fecha"
@@ -254,7 +252,6 @@ function renderPaymentUI() {
     return;
   }
 
-  // Formulario para pendiente o rechazado
   const motivoRechazo = rechazado && pago.observacionAdmin ? `<p class="danger"><strong>Motivo:</strong> ${pago.observacionAdmin}</p>` : "";
   
   el.paymentBanner.className = "inline-status pending";
@@ -283,7 +280,6 @@ function renderPaymentUI() {
     </div>
   `;
 
-  // Remover event listener viejo si existe y agregar nuevo
   const oldBtn = document.getElementById("sendPaymentProofBtn");
   if (oldBtn) {
     const newBtn = oldBtn.cloneNode(true);
@@ -291,6 +287,7 @@ function renderPaymentUI() {
     newBtn.addEventListener("click", sendPaymentProof);
   }
 }
+
 async function sendPaymentProof() {
   const referencia = document.getElementById("paymentReferenceInput")?.value?.trim();
   const observacionUsuario = document.getElementById("paymentObservationInput")?.value?.trim() || "";
@@ -308,7 +305,6 @@ async function sendPaymentProof() {
   try {
     const pagoRef = doc(db, "pagos", getPaymentDocId(state.currentUser.uid));
     
-    // ✅ Usar el estado correcto: "revision"
     await setDoc(pagoRef, {
       estado: "revision",
       referencia: referencia,
@@ -318,13 +314,11 @@ async function sendPaymentProof() {
 
     alert("✅ Pago registrado correctamente. Queda pendiente de revisión.");
     
-    // Limpiar formulario
     const refInput = document.getElementById("paymentReferenceInput");
     if (refInput) refInput.value = "";
     const obsInput = document.getElementById("paymentObservationInput");
     if (obsInput) obsInput.value = "";
     
-    // Forzar actualización de la UI
     renderPaymentUI();
     
   } catch (error) {
@@ -515,7 +509,6 @@ function renderAdminPayments() {
     return;
   }
 
-  // Crear un mapa de usuarios para buscar nombres y emails
   const usuariosMap = new Map();
   state.ranking.forEach(user => {
     usuariosMap.set(user.uid, {
@@ -525,13 +518,11 @@ function renderAdminPayments() {
   });
 
   el.adminPaymentsContainer.innerHTML = pagos.map(pago => {
-    // Buscar información del usuario
     const usuario = usuariosMap.get(pago.uid) || {
       nombre: pago.uid,
       email: ""
     };
     
-    // Determinar estado con texto amigable
     let estadoTexto = "";
     let estadoColor = "";
     switch (pago.estado) {
@@ -598,8 +589,6 @@ async function approvePayment(paymentId) {
     }, { merge: true });
     
     alert("✅ Pago aprobado correctamente");
-    
-    // Recargar la vista de admin
     renderAdminPayments();
     
   } catch (error) {
@@ -622,8 +611,6 @@ async function rejectPayment(paymentId) {
     }, { merge: true });
     
     alert("❌ Pago rechazado correctamente");
-    
-    // Recargar la vista de admin
     renderAdminPayments();
     
   } catch (error) {
@@ -631,8 +618,6 @@ async function rejectPayment(paymentId) {
     alert("❌ Error al rechazar: " + error.message);
   }
 }
-
-
 
 function renderAdminMatches() {
   if (!state.currentUserDoc?.esAdmin) {
@@ -692,7 +677,6 @@ async function calcularFecha() {
     return;
   }
 
-  // Tomar TODOS los partidos finalizados (sin filtrar por bloque)
   const partidosFinalizados = state.partidos.filter(p => p.estado === "finalizado");
   
   if (!partidosFinalizados.length) {
