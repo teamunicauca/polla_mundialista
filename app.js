@@ -548,23 +548,39 @@ function renderAdminPayments() {
 }
 
 async function approvePayment(paymentId) {
-  await updateDoc(doc(db, "pagos", paymentId), {
-    estado: "aprobado",
-    metodo: "manual_admin",
-    fecha_validacion: serverTimestamp(),
-    revisadoPor: state.currentUser.uid,
-    observacionAdmin: ""
-  });
+  try {
+    const pagoRef = doc(db, "pagos", paymentId);
+    await setDoc(pagoRef, {
+      estado: "aprobado",
+      metodo: "manual_admin",
+      fecha_validacion: serverTimestamp(),
+      revisadoPor: state.currentUser.uid,
+      observacionAdmin: ""
+    }, { merge: true });
+    alert("✅ Pago aprobado correctamente");
+  } catch (error) {
+    console.error("Error al aprobar:", error);
+    alert("❌ Error al aprobar: " + error.message);
+  }
 }
 
 async function rejectPayment(paymentId) {
   const motivo = prompt("Motivo del rechazo:", "Comprobante ilegible o no corresponde");
-  await updateDoc(doc(db, "pagos", paymentId), {
-    estado: "rechazado",
-    fecha_validacion: serverTimestamp(),
-    revisadoPor: state.currentUser.uid,
-    observacionAdmin: motivo || "Comprobante rechazado"
-  });
+  if (!motivo) return;
+  
+  try {
+    const pagoRef = doc(db, "pagos", paymentId);
+    await setDoc(pagoRef, {
+      estado: "rechazado",
+      fecha_validacion: serverTimestamp(),
+      revisadoPor: state.currentUser.uid,
+      observacionAdmin: motivo
+    }, { merge: true });
+    alert("✅ Pago rechazado correctamente");
+  } catch (error) {
+    console.error("Error al rechazar:", error);
+    alert("❌ Error al rechazar: " + error.message);
+  }
 }
 
 function renderAdminMatches() {
