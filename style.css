@@ -389,132 +389,15 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
   color: var(--success);
 }
 
-/* Badge de estado mejorado */
-.badge.info {
-  background: rgba(107, 114, 128, 0.15);
-  border-color: rgba(107, 114, 128, 0.3);
-  color: #9ca3af;
-}
-
-/* Tarjetas en grid - 2 columnas en desktop */
+/* Grid de tarjetas */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 1rem;
-}
-
-/* Tarjetas más compactas */
-.match-card {
-  padding: 1rem;
-  transition: all 0.2s;
-}
-
-.match-card.predicted {
-  border-left: 3px solid var(--success);
-  background: linear-gradient(135deg, var(--surface), rgba(16, 185, 129, 0.05));
-}
-
-.match-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.team-block {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 0.5rem 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-
-.team-line {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-}
-
-.team-line .flag {
-  font-size: 1.2rem;
-}
-
-.score-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.score-box label {
-  font-size: 0.7rem;
-  color: var(--muted);
-  display: block;
-  margin-bottom: 0.25rem;
-}
-
-.stepper {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.step-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.2s;
-}
-
-.step-btn:hover:not(:disabled) {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
-}
-
-.score-input {
-  width: 60px;
-  text-align: center;
-  padding: 0.5rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text);
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.score-input.has-value {
-  border-color: var(--success);
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--success);
-}
-
-.match-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .cards-grid {
-    grid-template-columns: 1fr;
-  }
-  
   .progress-compact {
     flex-wrap: wrap;
   }
@@ -529,4 +412,29 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
     text-align: center;
     order: 4;
   }
+  
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Badge info */
+.badge.info {
+  background: rgba(107, 114, 128, 0.15);
+  border-color: rgba(107, 114, 128, 0.3);
+  color: #9ca3af;
+}
+
+/* Tarjeta con pronóstico */
+.match-card.predicted {
+  border-left: 3px solid var(--success);
+  background: linear-gradient(135deg, var(--surface), rgba(16, 185, 129, 0.05));
+}
+
+/* Input con valor */
+.score-input.has-value {
+  border-color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  font-weight: 600;
 }
