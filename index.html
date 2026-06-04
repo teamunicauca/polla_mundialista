@@ -26,68 +26,72 @@
           </div>
           <div>
             <h1>Polla Mundialista</h1>
-            <p>Fecha 1 · Popayán</p>
+            <p>Canadá · México · EE.UU 2026</p>
           </div>
         </div>
 
         <nav class="nav" aria-label="Navegación principal">
-          <button class="nav-link active" data-view-target="dashboardView">Dashboard</button>
-          <button class="nav-link" data-view-target="matchesView">Pronósticos</button>
-          <button class="nav-link" data-view-target="paymentsView">Pagos</button>
-          <button class="nav-link" data-view-target="rankingView">Ranking</button>
-          <button class="nav-link hidden" id="adminNavBtn" data-view-target="adminView">Administrador</button>
+          <button class="nav-link active" data-view-target="dashboardView">📊 Dashboard</button>
+          <button class="nav-link" data-view-target="matchesView">⚽ Pronósticos</button>
+          <button class="nav-link" data-view-target="paymentsView">💰 Pagos</button>
+          <button class="nav-link" data-view-target="rankingView">🏆 Ranking</button>
+          <button class="nav-link hidden" id="adminNavBtn" data-view-target="adminView">⚙️ Administrador</button>
         </nav>
       </div>
 
       <div class="sidebar-bottom">
         <div class="glass-card profile-card" id="userMini"></div>
-        <button class="btn btn-ghost" id="logoutBtn">Cerrar sesión</button>
+        <button class="btn btn-ghost" id="logoutBtn">🚪 Cerrar sesión</button>
       </div>
     </aside>
 
     <main class="main" id="mainContent">
+      <!-- Login View -->
       <section class="view view-active" id="loginView">
         <div class="login-shell glass-card">
-          <span class="pill pill-accent">Mundial 2026 · Bloques por fecha</span>
-          <h2>Pronostica, paga tu bloque y compite por el podio.</h2>
-          <p>Aplicación SPA con autenticación Google, ranking automático, control de pagos y cierre antifraude una hora antes de cada partido.</p>
+          <span class="pill pill-accent">🏆 Mundial 2026 · Pronósticos por Fase</span>
+          <h2>Pronostica, paga tu fase y compite por el podio.</h2>
+          <p>Plataforma oficial de la polla mundialista. Registra tus pronósticos, sigue tu puntaje en tiempo real y compite con todos los participantes.</p>
           <div class="hero-points">
             <div class="hero-point"><strong>3 pts</strong><span>Marcador exacto</span></div>
             <div class="hero-point"><strong>1 pt</strong><span>Tendencia</span></div>
             <div class="hero-point"><strong>15%</strong><span>Administración</span></div>
           </div>
-          <button class="btn btn-primary btn-lg" id="googleLoginBtn">Iniciar sesión con Google</button>
-          <small>Antes de publicar en GitHub Pages, reemplaza la configuración Firebase en <code>app.js</code>.</small>
+          <button class="btn btn-primary btn-lg" id="googleLoginBtn">
+            🚀 Iniciar sesión con Google
+          </button>
+          <small class="helper">💡 Cada fase tiene un costo de $10.000 COP. Debes pagar para habilitar tus pronósticos.</small>
         </div>
       </section>
 
+      <!-- Dashboard View -->
       <section class="view" id="dashboardView">
         <header class="view-header">
           <div>
-            <p class="eyebrow">Resumen del jugador</p>
+            <p class="eyebrow">📋 Resumen del jugador</p>
             <h2>Dashboard y reglamento</h2>
           </div>
-          <button class="theme-toggle" id="themeToggle" type="button" aria-label="Cambiar tema">◐</button>
+          <button class="theme-toggle" id="themeToggle" type="button" aria-label="Cambiar tema">🌓</button>
         </header>
 
         <div class="kpi-grid">
           <article class="glass-card kpi-card">
-            <span>Mis puntos</span>
+            <span>🏅 Mis puntos</span>
             <strong id="kpiMisPuntos">0</strong>
             <small>Acumulado general</small>
           </article>
           <article class="glass-card kpi-card">
-            <span>Mi posición</span>
+            <span>📊 Mi posición</span>
             <strong id="kpiMiPosicion">-</strong>
             <small>Ranking en tiempo real</small>
           </article>
           <article class="glass-card kpi-card">
-            <span>Pozo bruto</span>
+            <span>💰 Pozo bruto</span>
             <strong id="kpiPozo">$0</strong>
             <small>Participantes pagados</small>
           </article>
           <article class="glass-card kpi-card payment-kpi">
-            <span>Estado de pago</span>
+            <span>💳 Estado de pago</span>
             <strong id="kpiPago">Pendiente</strong>
             <small id="kpiPagoDetalle">Debes pagar para pronosticar</small>
           </article>
@@ -96,99 +100,116 @@
         <div class="dashboard-grid">
           <article class="glass-card panel-card">
             <div class="panel-head">
-              <h3>Reglas del juego</h3>
-              <span class="pill">Fecha 1</span>
+              <h3>📜 Reglas del juego</h3>
+              <span class="pill">Fase 1</span>
             </div>
             <ul class="rule-list">
-              <li>Valor por fecha: $10.000 COP.</li>
-              <li>Administración: 15% del pozo bruto.</li>
-              <li>Premios: 70% primer lugar, 15% segundo lugar.</li>
-              <li>Puntaje: exacto 3, tendencia 1, error 0.</li>
-              <li>Solo cuentan los 90 minutos más adición.</li>
-              <li>El cierre se aplica una hora antes del partido.</li>
+              <li>💰 <strong>Valor por fase:</strong> $10.000 COP</li>
+              <li>📊 <strong>Administración:</strong> 15% del pozo bruto</li>
+              <li>🏆 <strong>Premios:</strong> 70% primer lugar, 15% segundo lugar</li>
+              <li>⚽ <strong>Puntaje:</strong> Exacto 3 pts | Tendencia 1 pt | Error 0 pts</li>
+              <li>⏱️ Solo cuentan los 90 minutos + adición</li>
+              <li>🔒 Cierre de pronósticos: 1 hora antes del partido</li>
             </ul>
           </article>
 
           <article class="glass-card panel-card">
             <div class="panel-head">
-              <h3>Desempates</h3>
+              <h3>⚖️ Desempates</h3>
               <span class="pill">En cascada</span>
             </div>
             <ol class="rule-list ordered">
-              <li>Más puntos totales.</li>
-              <li>Más marcadores exactos.</li>
-              <li>Más tendencias acertadas.</li>
-              <li>Menor fecha de inscripción.</li>
+              <li>Más puntos totales</li>
+              <li>Más marcadores exactos</li>
+              <li>Más tendencias acertadas</li>
+              <li>Menor fecha de inscripción</li>
             </ol>
             <div class="inline-status" id="paymentBanner"></div>
           </article>
         </div>
       </section>
 
+      <!-- Pronósticos View -->
       <section class="view" id="matchesView">
         <header class="view-header">
           <div>
-            <p class="eyebrow">Bloque activo</p>
+            <p class="eyebrow">⚽ Fase activa</p>
             <h2>Pronósticos disponibles</h2>
+          </div>
+          <div class="fase-selector">
+            <label for="selectorFecha" class="meta">Seleccionar fase:</label>
+            <select id="selectorFecha" class="pill fase-select">
+              <option value="fecha_1">📅 Fase 1 (11-18 Jun)</option>
+              <option value="fecha_2">📅 Fase 2 (18-25 Jun)</option>
+              <option value="fecha_3">📅 Fase 3 (25-30 Jun)</option>
+            </select>
           </div>
         </header>
         <div id="matchesGateMessage"></div>
-        <div id="matchesContainer" class="cards-grid"></div>
+        <div id="matchesContainer" class="cards-grid">
+          <div class="loading-skeleton">Cargando partidos...</div>
+        </div>
       </section>
 
+      <!-- Pagos View -->
       <section class="view" id="paymentsView">
         <header class="view-header">
           <div>
-            <p class="eyebrow">Control financiero</p>
-            <h2>Pagos del bloque</h2>
+            <p class="eyebrow">💳 Control financiero</p>
+            <h2>Pagos por fase</h2>
           </div>
         </header>
 
         <div class="payments-grid">
           <article class="glass-card panel-card">
             <div class="panel-head">
-              <h3>Mi pago</h3>
+              <h3>💵 Mi pago actual</h3>
               <span class="pill" id="paymentStatusBadge">Pendiente</span>
             </div>
             <div class="payment-state" id="paymentStateBox"></div>
             <div class="payment-meta-list">
-              <div><span>Valor</span><strong>$10.000 COP</strong></div>
-              <span>Fecha</span><strong>Fecha 1</strong>
-              <div><span>Estado</span><strong id="paymentStateText">Pendiente</strong></div>
+              <div><span>💲 Valor</span><strong>$10.000 COP</strong></div>
+              <div><span>📅 Fase actual</span><strong id="currentFaseLabel">Fase 1</strong></div>
+              <div><span>📊 Estado</span><strong id="paymentStateText">Pendiente</strong></div>
             </div>
           </article>
 
           <article class="glass-card panel-card">
             <div class="panel-head">
-              <h3>Distribución del pozo</h3>
+              <h3>💰 Distribución del pozo</h3>
               <span class="pill">Automática</span>
             </div>
             <div class="money-grid">
-              <div><span>Bruto</span><strong id="moneyBruto">$0</strong></div>
+              <div><span>Bruto total</span><strong id="moneyBruto">$0</strong></div>
               <div><span>Admin 15%</span><strong id="moneyAdmin">$0</strong></div>
-              <div><span>Premio 1</span><strong id="moneyPremio1">$0</strong></div>
-              <div><span>Premio 2</span><strong id="moneyPremio2">$0</strong></div>
+              <div><span>🥇 Premio 1° lugar</span><strong id="moneyPremio1">$0</strong></div>
+              <div><span>🥈 Premio 2° lugar</span><strong id="moneyPremio2">$0</strong></div>
             </div>
+            <p class="helper" style="margin-top: 1rem;">💡 Los premios se calculan automáticamente según los pagos aprobados.</p>
           </article>
         </div>
       </section>
 
+      <!-- Ranking View -->
       <section class="view" id="rankingView">
         <header class="view-header">
           <div>
-            <p class="eyebrow">Clasificación</p>
+            <p class="eyebrow">🏆 Clasificación general</p>
             <h2>El podio</h2>
           </div>
         </header>
         <div class="glass-card ranking-shell">
-          <div id="rankingContainer" class="ranking-list"></div>
+          <div id="rankingContainer" class="ranking-list">
+            <div class="loading-skeleton">Cargando ranking...</div>
+          </div>
         </div>
       </section>
 
+      <!-- Admin View -->
       <section class="view" id="adminView">
         <header class="view-header">
           <div>
-            <p class="eyebrow">Backoffice</p>
+            <p class="eyebrow">⚙️ Backoffice</p>
             <h2>Panel de administrador</h2>
           </div>
         </header>
@@ -196,7 +217,7 @@
         <div class="admin-grid">
           <article class="glass-card panel-card">
             <div class="panel-head">
-              <h3>Validar pagos</h3>
+              <h3>✅ Validar pagos</h3>
               <span class="pill">Manual</span>
             </div>
             <div id="adminPaymentsContainer" class="admin-list"></div>
@@ -204,22 +225,105 @@
 
           <article class="glass-card panel-card">
             <div class="panel-head">
-              <h3>Resultados oficiales</h3>
+              <h3>📝 Resultados oficiales</h3>
               <span class="pill">90 minutos</span>
             </div>
             <div id="adminMatchesContainer" class="admin-list"></div>
-            <button class="btn btn-primary" id="calculateBtn">Calcular fecha</button>
-            <p class="helper">El cálculo actualiza puntos, exactos y tendencias por usuario para la fecha activa.</p>
+            <button class="btn btn-primary" id="calculateBtn">
+              🧮 Calcular puntos de la fase
+            </button>
+            <p class="helper">⚠️ El cálculo actualiza puntos, exactos y tendencias por usuario para la fase seleccionada.</p>
           </article>
         </div>
       </section>
     </main>
   </div>
 
-  <script type="module" src="./app.js"></script>
-</body>
-</html>
-n>
+  <style>
+    /* Estilos adicionales para el selector de fechas */
+    .fase-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--surface);
+      padding: 0.5rem 1rem;
+      border-radius: 40px;
+      border: 1px solid var(--border);
+    }
+    
+    .fase-selector label {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    
+    .fase-select {
+      background: rgba(27, 76, 254, 0.1);
+      border: 1px solid rgba(27, 76, 254, 0.3);
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 40px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .fase-select:hover {
+      background: rgba(27, 76, 254, 0.2);
+      border-color: var(--primary);
+    }
+    
+    .fase-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .loading-skeleton {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+    }
+    
+    /* Mejoras responsive para móvil */
+    @media (max-width: 768px) {
+      .fase-selector {
+        padding: 0.3rem 0.8rem;
+      }
+      
+      .fase-select {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+      }
+      
+      .view-header {
+        flex-wrap: wrap;
+      }
+      
+      .fase-selector {
+        margin-left: 0 !important;
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+    
+    /* Animaciones */
+    .match-card {
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .match-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    
+    .btn {
+      transition: all 0.2s ease;
+    }
+    
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+  </style>
 
   <script type="module" src="./app.js"></script>
 </body>
