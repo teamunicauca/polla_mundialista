@@ -214,10 +214,10 @@ function renderPaymentUI() {
   el.kpiPagoDetalle.textContent = aprobado
     ? "✅ Ya puedes pronosticar esta fecha"
     : enRevision
-      ? "⏳ Tu comprobante está pendiente de revisión"
+      ? "⏳ Tu pago está pendiente de revisión"
       : rechazado
-        ? "❌ Comprobante rechazado. Debes enviar uno nuevo"
-        : "💰 Debes realizar y reportar tu pago";
+        ? "❌ Pago rechazado. Debes enviar uno nuevo"
+        : "💰 Debes pagar para participar";
 
   el.paymentStatusBadge.textContent = aprobado ? "Aprobado" : enRevision ? "En revisión" : rechazado ? "Rechazado" : "Pendiente";
   el.paymentStatusBadge.className = `pill ${
@@ -232,8 +232,8 @@ function renderPaymentUI() {
     `;
     el.paymentStateBox.innerHTML = `
       <h4>✅ Pago confirmado</h4>
-      <p>Tu aporte para la fecha activa ya fue validado por administración.</p>
-      <p>Ya puedes realizar tus pronósticos en la pestaña "Pronósticos".</p>
+      <p>Tu aporte para esta fecha ya fue validado.</p>
+      <p>Ya puedes realizar tus pronósticos.</p>
     `;
     return;
   }
@@ -241,49 +241,44 @@ function renderPaymentUI() {
   if (enRevision) {
     el.paymentBanner.className = "inline-status pending";
     el.paymentBanner.innerHTML = `
-      <strong>⏳ Comprobante enviado.</strong><br>
-      El administrador revisará tu soporte pronto.
+      <strong>⏳ Pago en revisión.</strong><br>
+      El administrador revisará tu información pronto.
     `;
     el.paymentStateBox.innerHTML = `
       <h4>⏳ Pago en revisión</h4>
       <p><strong>Referencia:</strong> ${pago.referencia || "Sin referencia"}</p>
-      <p>Tu comprobante está pendiente de validación.</p>
-      ${pago.soporteUrl ? `<p><a href="${pago.soporteUrl}" target="_blank" rel="noopener noreferrer">📎 Ver comprobante enviado</a></p>` : ""}
-      <p class="helper">Recibirás una notificación cuando sea aprobado.</p>
+      <p>Tu pago está pendiente de validación.</p>
+      <p class="helper">Recibirás confirmación cuando sea aprobado.</p>
     `;
     return;
   }
 
   // Formulario para pendiente_pago o rechazado
-  const motivoRechazo = rechazado && pago.observacionAdmin ? `<p class="danger"><strong>Motivo del rechazo:</strong> ${pago.observacionAdmin}</p>` : "";
+  const motivoRechazo = rechazado && pago.observacionAdmin ? `<p class="danger"><strong>Motivo:</strong> ${pago.observacionAdmin}</p>` : "";
   
   el.paymentBanner.className = "inline-status pending";
   el.paymentBanner.innerHTML = rechazado
-    ? `<strong>❌ Comprobante rechazado.</strong><br>Revisa la observación y envía un nuevo soporte.`
-    : `<strong>💰 Pago pendiente.</strong><br>Realiza tu pago por Nequi y reporta el comprobante.`;
+    ? `<strong>❌ Pago rechazado.</strong><br>Revisa el motivo y registra uno nuevo.`
+    : `<strong>💰 Pago pendiente.</strong><br>Realiza tu pago por Nequi y registra tus datos.`;
 
   el.paymentStateBox.innerHTML = `
-    <h4>${rechazado ? "📤 Reenviar comprobante" : "💳 Instrucciones de pago"}</h4>
+    <h4>${rechazado ? "📤 Registrar nuevo pago" : "💳 Instrucciones"}</h4>
     ${motivoRechazo}
     <div class="payment-details">
       <p><strong>Valor:</strong> ${formatCOP(pago.valor || 10000)}</p>
       <p><strong>📱 Nequi / Daviplata:</strong> <strong class="highlight">300 346 8482</strong></p>
-      <p><strong>🏦 Cuenta de ahorros Bancolombia:</strong> <strong class="highlight">07000012345</strong></p>
       <p><strong>🔑 Llave Nequi:</strong> <strong class="highlight">3003468482</strong></p>
-      <p class="helper">💡 Después de pagar, completa el formulario con tu nombre o los últimos 4 dígitos de la transacción.</p>
+      <p class="helper">💡 ¿Tienes pantallazo? Envíalo por WhatsApp al <strong>300 346 8482</strong> (opcional)</p>
     </div>
     
     <div class="payment-proof-box">
-      <label for="paymentReferenceInput">🔖 Tu nombre o referencia del pago *</label>
-      <input id="paymentReferenceInput" type="text" placeholder="Ej: Juan Pérez o 1234" value="${pago.referencia || ""}">
-      
-      <label for="paymentSupportUrlInput">🔗 URL del comprobante (Drive, Imgur, etc.) *</label>
-      <input id="paymentSupportUrlInput" type="url" placeholder="https://drive.google.com/..." value="${pago.soporteUrl || ""}">
+      <label for="paymentReferenceInput">📱 Tu número de celular o llave Nequi *</label>
+      <input id="paymentReferenceInput" type="text" placeholder="Ej: 3001234567" value="${pago.referencia || ""}">
       
       <label for="paymentObservationInput">📝 Observación (opcional)</label>
-      <textarea id="paymentObservationInput" placeholder="Ej: Pago desde Nequi, transacción #123456">${pago.observacionUsuario || ""}</textarea>
+      <textarea id="paymentObservationInput" placeholder="Información adicional sobre tu pago">${pago.observacionUsuario || ""}</textarea>
       
-      <button id="sendPaymentProofBtn" class="btn btn-primary">${rechazado ? "Reenviar comprobante" : "✅ Ya pagué, enviar comprobante"}</button>
+      <button id="sendPaymentProofBtn" class="btn btn-primary">${rechazado ? "Registrar pago" : "✅ Ya pagué, registrar"}</button>
     </div>
   `;
 
@@ -299,49 +294,41 @@ async function sendPaymentProof() {
   const pago = currentPayment();
 
   if (!state.currentUser || !pago) {
-    alert("No se encontró el registro de pago del usuario.");
+    alert("No se encontró el registro de pago.");
     return;
   }
 
   const referencia = document.getElementById("paymentReferenceInput")?.value?.trim() || "";
-  const soporteUrl = document.getElementById("paymentSupportUrlInput")?.value?.trim() || "";
   const observacionUsuario = document.getElementById("paymentObservationInput")?.value?.trim() || "";
 
   if (!referencia) {
-    alert("❌ Debes ingresar una referencia o nombre del pagador.");
-    return;
-  }
-
-  if (!soporteUrl) {
-    alert("❌ Debes pegar la URL del comprobante.");
+    alert("❌ Debes ingresar tu número de celular o llave Nequi.");
     return;
   }
 
   try {
     const pagoRef = doc(db, "pagos", getPaymentDocId(state.currentUser.uid));
     
-    // ✅ SOLO actualizar los campos que cambiaron
     await updateDoc(pagoRef, {
       estado: "pendiente_revision",
       referencia: referencia,
-      soporteUrl: soporteUrl,
       observacionUsuario: observacionUsuario,
-      fecha_solicitud: serverTimestamp()
+      fecha_solicitud: serverTimestamp(),
+      soporteUrl: "",
+      soportePath: ""
     });
 
-    alert("✅ Comprobante enviado correctamente. Queda pendiente de revisión del administrador.");
+    alert("✅ Pago registrado correctamente. Queda pendiente de revisión.");
     
     // Limpiar formulario
     const refInput = document.getElementById("paymentReferenceInput");
-    const urlInput = document.getElementById("paymentSupportUrlInput");
     const obsInput = document.getElementById("paymentObservationInput");
     if (refInput) refInput.value = "";
-    if (urlInput) urlInput.value = "";
     if (obsInput) obsInput.value = "";
     
   } catch (error) {
-    console.error("Error completo:", error);
-    alert("❌ No fue posible enviar el comprobante: " + error.message);
+    console.error("Error:", error);
+    alert("❌ No fue posible registrar el pago: " + error.message);
   }
 }
 
