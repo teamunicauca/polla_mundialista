@@ -515,28 +515,67 @@ function renderAdminPayments() {
     return;
   }
 
-  el.adminPaymentsContainer.innerHTML = pagos.map(pago => `
-    <div class="admin-row">
-      <div class="admin-main">
-        <strong>${pago.nombre || pago.uid}</strong>
-        <div class="meta">
-          ${pago.email || pago.uid} · ${formatCOP(pago.valor || 10000)} · Estado: ${pago.estado || "pendiente_pago"}
+  // Crear un mapa de usuarios para buscar nombres y emails
+  const usuariosMap = new Map();
+  state.ranking.forEach(user => {
+    usuariosMap.set(user.uid, {
+      nombre: user.nombre || user.email || user.uid,
+      email: user.email || ""
+    });
+  });
+
+  el.adminPaymentsContainer.innerHTML = pagos.map(pago => {
+    // Buscar información del usuario
+    const usuario = usuariosMap.get(pago.uid) || {
+      nombre: pago.uid,
+      email: ""
+    };
+    
+    // Determinar estado con texto amigable
+    let estadoTexto = "";
+    let estadoColor = "";
+    switch (pago.estado) {
+      case "aprobado":
+        estadoTexto = "✅ Aprobado";
+        estadoColor = "color: #10b981;";
+        break;
+      case "revision":
+        estadoTexto = "⏳ En revisión";
+        estadoColor = "color: #f59e0b;";
+        break;
+      case "rechazado":
+        estadoTexto = "❌ Rechazado";
+        estadoColor = "color: #ef4444;";
+        break;
+      default:
+        estadoTexto = "💰 Pendiente";
+        estadoColor = "color: #6b7280;";
+    }
+
+    return `
+      <div class="admin-row">
+        <div class="admin-main">
+          <strong style="font-size: 1rem;">👤 ${usuario.nombre}</strong>
+          ${usuario.email ? `<div class="meta" style="font-size: 0.85rem;">📧 ${usuario.email}</div>` : ""}
+          <div class="meta" style="font-size: 0.8rem; margin-top: 4px;">🆔 <span style="font-family: monospace; font-size: 0.75rem;">${pago.uid}</span></div>
+          <div class="meta" style="margin-top: 8px;">
+            💰 ${formatCOP(pago.valor || 10000)} · <span style="${estadoColor}">${estadoTexto}</span>
+          </div>
+          <div class="meta">📱 Referencia: <strong>${pago.referencia || "Sin referencia"}</strong></div>
+          <div class="meta">📝 Observación: ${pago.observacionUsuario || "Sin observación"}</div>
+          ${pago.observacionAdmin ? `<div class="meta" style="color: #ef4444;">⚠️ Admin: ${pago.observacionAdmin}</div>` : ""}
         </div>
-        <div class="meta">Referencia: ${pago.referencia || "Sin referencia"}</div>
-        <div class="meta">Observación usuario: ${pago.observacionUsuario || "Sin observación"}</div>
-        ${pago.soporteUrl ? `<div class="meta"><a href="${pago.soporteUrl}" target="_blank" rel="noopener noreferrer">Ver comprobante</a></div>` : `<div class="meta">Sin comprobante</div>`}
-        ${pago.observacionAdmin ? `<div class="meta">Obs. admin: ${pago.observacionAdmin}</div>` : ""}
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-secondary approve-payment-btn" data-payment-id="${pago.id}" ${pago.estado === "aprobado" ? "disabled" : ""}>
+            ${pago.estado === "aprobado" ? "✅ Aprobado" : "👍 Aprobar"}
+          </button>
+          <button class="btn btn-secondary reject-payment-btn" data-payment-id="${pago.id}" ${pago.estado === "aprobado" ? "disabled" : ""}>
+            👎 Rechazar
+          </button>
+        </div>
       </div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="btn btn-secondary approve-payment-btn" data-payment-id="${pago.id}" ${pago.estado === "aprobado" ? "disabled" : ""}>
-          ${pago.estado === "aprobado" ? "Aprobado" : "Aprobar"}
-        </button>
-        <button class="btn btn-secondary reject-payment-btn" data-payment-id="${pago.id}">
-          Rechazar
-        </button>
-      </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 
   document.querySelectorAll(".approve-payment-btn").forEach(btn => {
     btn.addEventListener("click", () => approvePayment(btn.dataset.paymentId));
@@ -557,10 +596,39 @@ async function approvePayment(paymentId) {
       revisadoPor: state.currentUser.uid,
       observacionAdmin: ""
     }, { merge: true });
+    
     alert("✅ Pago aprobado correctamente");
+    
+    // Recargar la vista de admin
+    renderAdminPayments();
+    
   } catch (error) {
     console.error("Error al aprobar:", error);
     alert("❌ Error al aprobar: " + error.message);
+  }
+}
+
+async function rejectPayment(paymentId) {
+  const motivo = prompt("Motivo del rechazo:", "Número de celular incorrecto o no se encontró el pago");
+  if (!motivo) return;
+  
+  try {
+    const pagoRef = doc(db, "pagos", paymentId);
+    await setDoc(pagoRef, {
+      estado: "rechazado",
+      fecha_validacion: serverTimestamp(),
+      revisadoPor: state.currentUser.uid,
+      observacionAdmin: motivo
+    }, { merge: true });
+    
+    alert("❌ Pago rechazado correctamente");
+    
+    // Recargar la vista de admin
+    renderAdminPayments();
+    
+  } catch (error) {
+    console.error("Error al rechazar:", error);
+    alert("❌ Error al rechazar: " + error.message);
   }
 }
 
