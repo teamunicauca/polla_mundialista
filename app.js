@@ -174,7 +174,7 @@ async function upsertUserProfile(user) {
       uid: user.uid,
       bloque: state.bloqueActual,
       valor: 10000,
-      estado: "pendiente_pago",
+      estado: "pendiente",
       metodo: "nequi",
       referencia: "",
       soporteUrl: "",
@@ -206,7 +206,7 @@ function renderPaymentUI() {
   
   const estado = pago.estado ?? "pendiente_pago";
   const aprobado = estado === "aprobado";
-  const enRevision = estado === "pendiente_revision";
+  const enRevision = estado === "pendiente";
   const rechazado = estado === "rechazado";
 
   // Actualizar KPIs
@@ -291,14 +291,7 @@ function renderPaymentUI() {
   }
 }
 async function sendPaymentProof() {
-  const pago = currentPayment();
-
-  if (!state.currentUser || !pago) {
-    alert("No se encontró el registro de pago.");
-    return;
-  }
-
-  const referencia = document.getElementById("paymentReferenceInput")?.value?.trim() || "";
+  const referencia = document.getElementById("paymentReferenceInput")?.value?.trim();
   const observacionUsuario = document.getElementById("paymentObservationInput")?.value?.trim() || "";
 
   if (!referencia) {
@@ -306,28 +299,35 @@ async function sendPaymentProof() {
     return;
   }
 
+  if (!state.currentUser) {
+    alert("❌ No hay usuario logueado.");
+    return;
+  }
+
   try {
     const pagoRef = doc(db, "pagos", getPaymentDocId(state.currentUser.uid));
     
-    await updateDoc(pagoRef, {
-      estado: "pendiente_revision",
+    // ✅ Usar el estado correcto: "revision"
+    await setDoc(pagoRef, {
+      estado: "revision",
       referencia: referencia,
       observacionUsuario: observacionUsuario,
-      fecha_solicitud: serverTimestamp(),
-      soporteUrl: "",
-      soportePath: ""
-    });
+      fecha_solicitud: serverTimestamp()
+    }, { merge: true });
 
     alert("✅ Pago registrado correctamente. Queda pendiente de revisión.");
     
     // Limpiar formulario
     const refInput = document.getElementById("paymentReferenceInput");
-    const obsInput = document.getElementById("paymentObservationInput");
     if (refInput) refInput.value = "";
+    const obsInput = document.getElementById("paymentObservationInput");
     if (obsInput) obsInput.value = "";
     
+    // Forzar actualización de la UI
+    renderPaymentUI();
+    
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error detallado:", error);
     alert("❌ No fue posible registrar el pago: " + error.message);
   }
 }
