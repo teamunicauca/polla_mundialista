@@ -239,3 +239,85 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
   .hero-points, .score-grid, .money-grid, .admin-score { grid-template-columns: 1fr; }
   .brand-wrap { margin-bottom: 1rem; }
 }
+/* Estilos adicionales para pagos */
+.payment-details {
+  background: rgba(27, 76, 254, 0.08);
+  padding: 1rem;
+  border-radius: 16px;
+  margin: 1rem 0;
+  border: 1px solid rgba(27, 76, 254, 0.2);
+}
+
+.highlight {
+  color: var(--primary-2);
+  font-weight: 600;
+  font-size: 1.1rem;
+  background: rgba(27, 76, 254, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.payment-proof-box {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.payment-proof-box label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.payment-proof-box input,
+.payment-proof-box textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.payment-proof-box textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.payment-proof-box input:focus,
+.payment-proof-box textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(27, 76, 254, 0.1);
+}
+
+.danger {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+  padding: 0.5rem;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  border-left: 3px solid var(--danger);
+}
+
+.pill-warning {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.32);
+  color: #fde68a;
+}
+
+.pill-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.32);
+  color: #fecaca;
+}
+
+.helper {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  color: var(--faint);
+}
