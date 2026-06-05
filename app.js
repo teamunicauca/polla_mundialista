@@ -1081,6 +1081,17 @@ async function calcularFecha() {
   const usuariosAcum = new Map();
   const batch = writeBatch(db);
 
+  // 🔥 PRIMERO: Reiniciar puntos de todos los usuarios a 0
+  const usuariosSnap = await getDocs(collection(db, "usuarios"));
+  for (const userDoc of usuariosSnap.docs) {
+    batch.update(doc(db, "usuarios", userDoc.id), {
+      puntos_totales: 0,
+      cantidad_exactos: 0,
+      cantidad_tendencias: 0
+    });
+  }
+
+  // 🔥 SEGUNDO: Calcular puntos desde cero
   predSnap.forEach(predDoc => {
     const pred = predDoc.data();
     const partido = partidosFinalizados.find(p => p.id === pred.partidoId);
@@ -1104,25 +1115,17 @@ async function calcularFecha() {
     acc.tendencias += result.tendencia;
   });
 
+  // 🔥 TERCERO: Asignar los puntos calculados (no sumar)
   for (const [uid, acc] of usuariosAcum) {
-    const userRef = doc(db, "usuarios", uid);
-    const userSnap = await getDoc(userRef);
-    
-    if (userSnap.exists()) {
-      const puntosActuales = userSnap.data().puntos_totales || 0;
-      const exactosActuales = userSnap.data().cantidad_exactos || 0;
-      const tendenciasActuales = userSnap.data().cantidad_tendencias || 0;
-      
-      batch.update(userRef, {
-        puntos_totales: puntosActuales + acc.puntos,
-        cantidad_exactos: exactosActuales + acc.exactos,
-        cantidad_tendencias: tendenciasActuales + acc.tendencias
-      });
-    }
+    batch.update(doc(db, "usuarios", uid), {
+      puntos_totales: acc.puntos,
+      cantidad_exactos: acc.exactos,
+      cantidad_tendencias: acc.tendencias
+    });
   }
 
   await batch.commit();
-  alert("Fecha calculada correctamente.");
+  alert("Fecha calculada correctamente. Los puntos han sido recalibrados desde cero.");
   console.log("✅ Cálculo completado");
 }
 
@@ -1140,7 +1143,57 @@ function clearListeners() {
   state.unsubscribers.forEach(fn => fn && fn());
   state.unsubscribers = [];
 }
-
+// ==================== SELECTOR DE FASES ====================
+function initFechaSelector() {
+  const selectorFecha = document.getElementById("selectorFecha");
+  if (!selectorFecha) {
+    console.log("⚠️ Selector de fases no encontrado en el DOM");
+    return;
+  }
+  
+  console.log("✅ Selector de fases inicializado");
+  
+  selectorFecha.addEventListener("change", async (e) => {
+    const nuevaFecha = e.target.value;
+    if (state.bloqueActual === nuevaFecha) return;
+    
+    console.log(`📅 Cambiando de ${state.bloqueActual} a ${nuevaFecha}`);
+    state.bloqueActual = nuevaFecha;
+    
+    // Recargar todos los listeners con la nueva fecha
+    if (state.currentUser) {
+      clearListeners();
+      setupRealtime(state.currentUser);
+    }
+    
+    // Mostrar feedback visual
+    const toast = document.createElement("div");
+    toast.textContent = `📅 Cambiado a ${nuevaFecha === 'fecha_1' ? 'Fase 1' : nuevaFecha === 'fecha_2' ? 'Fase 2' : 'Fase 3'}`;
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 40px;
+      z-index: 9999;
+      animation: fadeOut 2s ease forwards;
+      font-size: 14px;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  });
+}
+// ==================== SELECTOR DE FASES PARA REPORTE ====================
+function initReporteFechaSelector() {
+  const selector = document.getElementById("selectorFechaReporte");
+  if (!selector) return;
+  
+  selector.addEventListener("change", () => {
+    renderReporte();
+  });
+}
 function setupRealtime(user) {
   clearListeners();
 
