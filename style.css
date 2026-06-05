@@ -892,3 +892,164 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
     justify-content: space-between;
   }
 }
+/* ===== REPORTE COMPACTO ESTILO TABLA ===== */
+.reporte-header-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.reporte-header-compact h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.reporte-header-compact .meta {
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+}
+
+.reporte-legend {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.7rem;
+}
+
+.legend-exacto {
+  color: var(--success);
+}
+
+.legend-tendencia {
+  color: var(--warning);
+}
+
+.legend-error {
+  color: var(--danger);
+}
+
+.reporte-table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.reporte-table-compact {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+  min-width: 800px;
+}
+
+.reporte-table-compact th,
+.reporte-table-compact td {
+  padding: 0.6rem 0.4rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.reporte-table-compact th {
+  background: rgba(27, 76, 254, 0.1);
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.reporte-table-compact .col-nombre {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.reporte-table-compact .col-resultado {
+  font-family: monospace;
+  font-weight: 600;
+  min-width: 45px;
+}
+
+.reporte-table-compact .col-puntos-mini {
+  font-weight: 600;
+  min-width: 35px;
+}
+
+.reporte-table-compact .col-total {
+  font-weight: 700;
+  background: rgba(27, 76, 254, 0.05);
+  min-width: 55px;
+}
+
+.reporte-table-compact .pts-exacto {
+  color: var(--success);
+}
+
+.reporte-table-compact .pts-tendencia {
+  color: var(--warning);
+}
+
+.reporte-table-compact .pts-cero {
+  color: var(--danger);
+}
+
+.reporte-table-compact .medal {
+  display: inline-block;
+  width: 28px;
+  font-size: 0.8rem;
+}
+
+.reporte-table-compact .row-gold {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.1), transparent);
+}
+
+.reporte-table-compact .row-silver {
+  background: linear-gradient(90deg, rgba(203, 213, 225, 0.1), transparent);
+}
+
+.reporte-table-compact .row-bronze {
+  background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), transparent);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .reporte-header-compact {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .reporte-table-compact th,
+  .reporte-table-compact td {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.6rem;
+  }
+  
+  .reporte-table-compact .col-nombre {
+    min-width: 100px;
+  }
+}
+
+.fase-selector-reporte {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  padding: 0.5rem 1rem;
+  border-radius: 40px;
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+  .fase-selector-reporte {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
