@@ -47,6 +47,7 @@ const state = {
   bloqueData: null,
   unsubscribers: []
 };
+let isSaving = false;  // ← Agrega esta línea
 
 const $ = (id) => document.getElementById(id);
 const views = document.querySelectorAll(".view");
@@ -612,8 +613,12 @@ function renderMatches() {
   
   // 🔥 PASO IMPORTANTE: Sincronizar TODOS los partidos antes de actualizar la visibilidad del botón
   // Esto asegura que los badges y clases reflejen los valores actuales
-  for (const partido of state.partidos) {
-    syncMatchModifiedState(partido.id);
+  // 🔥 PASO IMPORTANTE: Sincronizar TODOS los partidos antes de actualizar la visibilidad del botón
+  // Solo ejecutar si NO estamos en medio de un guardado
+  if (!isSaving) {
+    for (const partido of state.partidos) {
+      syncMatchModifiedState(partido.id);
+    }
   }
   
   // Actualizar visibilidad del botón basado en el estado sincronizado
@@ -622,6 +627,8 @@ function renderMatches() {
 
 // Nueva función para guardar TODOS los pronósticos modificados
 async function saveAllPredictions() {
+  if (isSaving) return;  // ← Evita ejecuciones simultáneas
+  isSaving = true;       // ← Marcar que estamos guardando
   if (!isPaymentApproved()) {
     alert("❌ Tu pago aún no ha sido aprobado.");
     return;
@@ -721,10 +728,12 @@ async function saveAllPredictions() {
     // 4) El botón ya está oculto, no necesitamos hacer nada más
 
     alert(`✅ ${modifiedMatches.length} pronóstico${modifiedMatches.length > 1 ? "s" : ""} guardado${modifiedMatches.length > 1 ? "s" : ""}.`);
-
+    isSaving = false;  // ← Liberar después de terminar
+    renderMatches();
   } catch (error) {
     console.error("Error guardando predicciones:", error);
     alert(`❌ Error al guardar: ${error.message}`);
+    isSaving = false;  // ← Liberar también en error
     updateSaveAllButtonVisibility();
   }
 }
