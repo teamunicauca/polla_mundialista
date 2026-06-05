@@ -104,12 +104,26 @@ function updateSaveAllButtonVisibility() {
   if (!saveAllFloatBtn) return;
 
   const inPronosticosView = document.getElementById("matchesView")?.classList.contains("view-active");
-  const hasModifiedMatches = document.querySelector(".match-card.modified") !== null;
+  
+  // 🔥 CAMBIO CLAVE: No usar .match-card.modified, recalcular desde los inputs actuales
+  let hasModifiedMatches = false;
+  const matchesContainer = document.getElementById("matchesContainer");
+  
+  if (matchesContainer && inPronosticosView && isPaymentApproved()) {
+    const inputs = matchesContainer.querySelectorAll(".score-input");
+    for (const input of inputs) {
+      const original = input.dataset.original || "";
+      const current = input.value;
+      if (original !== current) {
+        hasModifiedMatches = true;
+        break;
+      }
+    }
+  }
+  
   const shouldShow = inPronosticosView && isPaymentApproved() && hasModifiedMatches;
-
   saveAllFloatBtn.style.display = shouldShow ? "flex" : "none";
 }
-
 navLinks.forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.viewTarget)));
 
 el.themeToggle?.addEventListener("click", () => {
