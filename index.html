@@ -46,6 +46,7 @@
     </aside>
 
     <main class="main" id="mainContent">
+      <!-- Login View -->
       <section class="view view-active" id="loginView">
         <div class="login-shell glass-card">
           <span class="pill pill-accent">🏆 Mundial 2026 · Pronósticos por Fase</span>
@@ -63,6 +64,7 @@
         </div>
       </section>
 
+      <!-- Dashboard View -->
       <section class="view" id="dashboardView">
         <header class="view-header">
           <div>
@@ -127,6 +129,7 @@
         </div>
       </section>
 
+      <!-- Pronósticos View -->
       <section class="view" id="matchesView">
         <header class="view-header">
           <div>
@@ -143,16 +146,12 @@
           </div>
         </header>
         <div id="matchesGateMessage"></div>
-        
-        <div id="matchesContainer">
+        <div id="matchesContainer" class="cards-grid">
           <div class="loading-skeleton">Cargando partidos...</div>
         </div>
-
-        <button id="floatingSaveBtn" class="floating-save-btn hidden">
-          💾 Guardar todos los cambios (<span id="floatingSaveCount">0</span>)
-        </button>
       </section>
 
+      <!-- Pagos View -->
       <section class="view" id="paymentsView">
         <header class="view-header">
           <div>
@@ -191,6 +190,7 @@
         </div>
       </section>
 
+      <!-- Ranking View -->
       <section class="view" id="rankingView">
         <header class="view-header">
           <div>
@@ -205,6 +205,7 @@
         </div>
       </section>
 
+      <!-- Admin View -->
       <section class="view" id="adminView">
         <header class="view-header">
           <div>
@@ -237,7 +238,9 @@
       </section>
     </main>
   </div>
-
+<button id="saveAllFloatBtn" class="btn-save-float" style="display:none;">
+  💾 Guardar todos los cambios
+</button>
   <style>
     /* Estilos adicionales para el selector de fechas */
     .fase-selector {
@@ -306,7 +309,7 @@
     
     /* Animaciones */
     .match-card {
-      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
     
     .match-card:hover {
@@ -322,88 +325,8 @@
       transform: translateY(-1px);
       filter: brightness(1.05);
     }
-
-    /* ESTILOS DEL SISTEMA DE GUARDADO MASIVO (UX) */
-    .hidden {
-      display: none !important;
-    }
-
-    .match-card-changed {
-      border: 2px solid #f59e0b !important;
-      box-shadow: 0 0 15px rgba(245, 158, 11, 0.15) !important;
-      position: relative;
-    }
-
-    .match-card-changed::before {
-      content: "✏️ Modificado";
-      position: absolute;
-      top: -10px;
-      right: 15px;
-      background: #f59e0b;
-      color: #0d1117;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 0.1rem 0.5rem;
-      border-radius: 10px;
-      z-index: 10;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    }
-
-    .floating-save-btn {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: #ffffff;
-      border: none;
-      padding: 0.9rem 1.75rem;
-      border-radius: 50px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
-      cursor: pointer;
-      z-index: 999;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      animation: floatingBtnPulse 2s infinite ease-in-out;
-    }
-
-    .floating-save-btn:hover {
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 15px 30px rgba(16, 185, 129, 0.5);
-      filter: brightness(1.1);
-    }
-
-    .floating-save-btn:active {
-      transform: translateY(-1px) scale(0.98);
-    }
-
-    @keyframes floatingBtnPulse {
-      0% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-      100% { transform: translateY(0); }
-    }
-
-    @media (max-width: 900px) {
-      .floating-save-btn {
-        bottom: 1.5rem;
-        right: 50%;
-        transform: translateX(50%);
-        width: calc(100% - 3rem);
-        justify-content: center;
-      }
-      @keyframes floatingBtnPulse {
-        0% { transform: translateX(50%) translateY(0); }
-        50% { transform: translateX(50%) translateY(-4px); }
-        100% { transform: translateX(50%) translateY(0); }
-      }
-      .floating-save-btn:hover {
-        transform: translateX(50%) translateY(-2px);
-      }
-    }
   </style>
+
 
   <script type="module" src="./app.js"></script>
 </body>
