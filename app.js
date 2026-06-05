@@ -1143,57 +1143,7 @@ function clearListeners() {
   state.unsubscribers.forEach(fn => fn && fn());
   state.unsubscribers = [];
 }
-// ==================== SELECTOR DE FASES ====================
-function initFechaSelector() {
-  const selectorFecha = document.getElementById("selectorFecha");
-  if (!selectorFecha) {
-    console.log("⚠️ Selector de fases no encontrado en el DOM");
-    return;
-  }
-  
-  console.log("✅ Selector de fases inicializado");
-  
-  selectorFecha.addEventListener("change", async (e) => {
-    const nuevaFecha = e.target.value;
-    if (state.bloqueActual === nuevaFecha) return;
-    
-    console.log(`📅 Cambiando de ${state.bloqueActual} a ${nuevaFecha}`);
-    state.bloqueActual = nuevaFecha;
-    
-    // Recargar todos los listeners con la nueva fecha
-    if (state.currentUser) {
-      clearListeners();
-      setupRealtime(state.currentUser);
-    }
-    
-    // Mostrar feedback visual
-    const toast = document.createElement("div");
-    toast.textContent = `📅 Cambiado a ${nuevaFecha === 'fecha_1' ? 'Fase 1' : nuevaFecha === 'fecha_2' ? 'Fase 2' : 'Fase 3'}`;
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: var(--primary);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 40px;
-      z-index: 9999;
-      animation: fadeOut 2s ease forwards;
-      font-size: 14px;
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2000);
-  });
-}
-// ==================== SELECTOR DE FASES PARA REPORTE ====================
-function initReporteFechaSelector() {
-  const selector = document.getElementById("selectorFechaReporte");
-  if (!selector) return;
-  
-  selector.addEventListener("change", () => {
-    renderReporte();
-  });
-}
+
 function setupRealtime(user) {
   clearListeners();
 
@@ -1289,7 +1239,57 @@ function setupRealtime(user) {
     btn.addEventListener("click", () => { if (window.innerWidth < 900) closeMenu(); });
   });
 })();
-
+// ==================== SELECTOR DE FASES ====================
+function initFechaSelector() {
+  const selectorFecha = document.getElementById("selectorFecha");
+  if (!selectorFecha) {
+    console.log("⚠️ Selector de fases no encontrado en el DOM");
+    return;
+  }
+  
+  console.log("✅ Selector de fases inicializado");
+  
+  selectorFecha.addEventListener("change", async (e) => {
+    const nuevaFecha = e.target.value;
+    if (state.bloqueActual === nuevaFecha) return;
+    
+    console.log(`📅 Cambiando de ${state.bloqueActual} a ${nuevaFecha}`);
+    state.bloqueActual = nuevaFecha;
+    
+    // Recargar todos los listeners con la nueva fecha
+    if (state.currentUser) {
+      clearListeners();
+      setupRealtime(state.currentUser);
+    }
+    
+    // Mostrar feedback visual
+    const toast = document.createElement("div");
+    toast.textContent = `📅 Cambiado a ${nuevaFecha === 'fecha_1' ? 'Fase 1' : nuevaFecha === 'fecha_2' ? 'Fase 2' : 'Fase 3'}`;
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 40px;
+      z-index: 9999;
+      animation: fadeOut 2s ease forwards;
+      font-size: 14px;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  });
+}
+// ==================== SELECTOR DE FASES PARA REPORTE ====================
+function initReporteFechaSelector() {
+  const selector = document.getElementById("selectorFechaReporte");
+  if (!selector) return;
+  
+  selector.addEventListener("change", () => {
+    renderReporte();
+  });
+}
 onAuthStateChanged(auth, async user => {
   if (!user) {
     state.currentUser = null;
