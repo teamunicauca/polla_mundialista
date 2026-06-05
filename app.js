@@ -105,85 +105,90 @@ el.themeToggle?.addEventListener("click", () => {
   root.dataset.theme = root.dataset.theme === "light" ? "dark" : "light";
 });
 
+// Devuelve un <img> de bandera usando flagcdn.com (código ISO 3166-1 alpha-2)
+// Más fiable que emojis Unicode en Android/Windows
 function getFlagEmoji(name) {
   const map = {
     // Grupo A
-    "México": "🇲🇽",
-    "Sudáfrica": "🇿🇦",
-    "República de Corea": "🇰🇷",
-    "Corea del Sur": "🇰🇷",
-    "Chequia": "🇨🇿",
-    "República Checa": "🇨🇿",
-    
+    "México": "mx",
+    "Sudáfrica": "za",
+    "República de Corea": "kr",
+    "Corea del Sur": "kr",
+    "Chequia": "cz",
+    "República Checa": "cz",
+
     // Grupo B
-    "Canadá": "🇨🇦",
-    "Bosnia y Herzegovina": "🇧🇦",
-    "Catar": "🇶🇦",
-    "Suiza": "🇨🇭",
-    
+    "Canadá": "ca",
+    "Bosnia y Herzegovina": "ba",
+    "Catar": "qa",
+    "Suiza": "ch",
+
     // Grupo C
-    "Brasil": "🇧🇷",
-    "Marruecos": "🇲🇦",
-    "Haití": "🇭🇹",
-    "Escocia": "🏴 (Escocia)",
-    
+    "Brasil": "br",
+    "Marruecos": "ma",
+    "Haití": "ht",
+    "Escocia": "gb-sct",   // flagcdn soporta subdivisiones
+
     // Grupo D
-    "Estados Unidos": "🇺🇸",
-    "EE. UU.": "🇺🇸",
-    "Paraguay": "🇵🇾",
-    "Australia": "🇦🇺",
-    "Turquía": "🇹🇷",
-    
+    "Estados Unidos": "us",
+    "EE. UU.": "us",
+    "Paraguay": "py",
+    "Australia": "au",
+    "Turquía": "tr",
+
     // Grupo E
-    "Alemania": "🇩🇪",
-    "Curazao": "🇨🇼",
-    "Costa de Marfil": "🇨🇮",
-    "Ecuador": "🇪🇨",
-    
+    "Alemania": "de",
+    "Curazao": "cw",
+    "Costa de Marfil": "ci",
+    "Ecuador": "ec",
+
     // Grupo F
-    "Países Bajos": "🇳🇱",
-    "Japón": "🇯🇵",
-    "Suecia": "🇸🇪",
-    "Túnez": "🇹🇳",
-    
+    "Países Bajos": "nl",
+    "Japón": "jp",
+    "Suecia": "se",
+    "Túnez": "tn",
+
     // Grupo G
-    "Bélgica": "🇧🇪",
-    "Egipto": "🇪🇬",
-    "Irán": "🇮🇷",
-    "Nueva Zelanda": "🇳🇿",
-    
+    "Bélgica": "be",
+    "Egipto": "eg",
+    "Irán": "ir",
+    "Nueva Zelanda": "nz",
+
     // Grupo H
-    "España": "🇪🇸",
-    "Cabo Verde": "🇨🇻",
-    "Arabia Saudita": "🇸🇦",
-    "Uruguay": "🇺🇾",
-    
+    "España": "es",
+    "Cabo Verde": "cv",
+    "Arabia Saudita": "sa",
+    "Uruguay": "uy",
+
     // Grupo I
-    "Francia": "🇫🇷",
-    "Senegal": "🇸🇳",
-    "Irak": "🇮🇶",
-    "Noruega": "🇳🇴",
-    
+    "Francia": "fr",
+    "Senegal": "sn",
+    "Irak": "iq",
+    "Noruega": "no",
+
     // Grupo J
-    "Argentina": "🇦🇷",
-    "Argelia": "🇩🇿",
-    "Austria": "🇦🇹",
-    "Jordania": "🇯🇴",
-    
+    "Argentina": "ar",
+    "Argelia": "dz",
+    "Austria": "at",
+    "Jordania": "jo",
+
     // Grupo K
-    "Portugal": "🇵🇹",
-    "RD Congo": "🇨🇩",
-    "República Democrática del Congo": "🇨🇩",
-    "Uzbekistán": "🇺🇿",
-    "Colombia": "🇨🇴",
-    
+    "Portugal": "pt",
+    "RD Congo": "cd",
+    "República Democrática del Congo": "cd",
+    "Uzbekistán": "uz",
+    "Colombia": "co",
+
     // Grupo L
-    "Inglaterra": "🇬🇧",
-    "Croacia": "🇭🇷",
-    "Ghana": "🇬🇭",
-    "Panamá": "🇵🇦"
+    "Inglaterra": "gb-eng",  // flagcdn soporta subdivisiones
+    "Croacia": "hr",
+    "Ghana": "gh",
+    "Panamá": "pa"
   };
-  return map[name] || "🏳️";
+
+  const code = map[name];
+  if (!code) return `<img src="https://flagcdn.com/w40/un.png" width="28" height="20" alt="?" style="border-radius:3px;object-fit:cover;">`;
+  return `<img src="https://flagcdn.com/w40/${code}.png" width="28" height="20" alt="${name}" title="${name}" style="border-radius:3px;object-fit:cover;">`;
 }
 
 function computeCutoff(matchDate) {
@@ -1137,6 +1142,46 @@ function setupRealtime(user) {
 
   setInterval(() => state.currentUser && renderMatches(), 60000);
 }
+
+// ===== MENÚ HAMBURGUESA MÓVIL =====
+(function initHamburger() {
+  const hamburger = document.createElement("button");
+  hamburger.id = "hamburgerBtn";
+  hamburger.className = "hamburger";
+  hamburger.setAttribute("aria-label", "Abrir menú");
+  hamburger.setAttribute("aria-expanded", "false");
+  hamburger.innerHTML = "☰";
+  document.body.appendChild(hamburger);
+
+  const overlay = document.createElement("div");
+  overlay.className = "sidebar-overlay";
+  document.body.appendChild(overlay);
+
+  const sidebar = document.getElementById("sidebar");
+
+  function openMenu() {
+    sidebar?.classList.add("open");
+    overlay.classList.add("open");
+    hamburger.innerHTML = "✕";
+    hamburger.setAttribute("aria-expanded", "true");
+  }
+  function closeMenu() {
+    sidebar?.classList.remove("open");
+    overlay.classList.remove("open");
+    hamburger.innerHTML = "☰";
+    hamburger.setAttribute("aria-expanded", "false");
+  }
+
+  hamburger.addEventListener("click", () => {
+    sidebar?.classList.contains("open") ? closeMenu() : openMenu();
+  });
+  overlay.addEventListener("click", closeMenu);
+
+  // Cerrar al navegar (móvil)
+  document.querySelectorAll("[data-view-target]").forEach(btn => {
+    btn.addEventListener("click", () => { if (window.innerWidth < 900) closeMenu(); });
+  });
+})();
 
 onAuthStateChanged(auth, async user => {
   if (!user) {
