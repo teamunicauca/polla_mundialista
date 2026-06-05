@@ -455,3 +455,39 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
     order: 4;
   }
 }
+/* Botón guardar todos */
+.save-all-btn {
+  margin-left: auto;
+  background: linear-gradient(135deg, var(--success), #059669);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  min-height: 36px;
+}
+
+.save-all-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.save-all-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tarjeta modificada */
+.match-card.modified {
+  border-left: 3px solid var(--warning);
+  background: linear-gradient(135deg, var(--surface), rgba(245, 158, 11, 0.1));
+  transition: all 0.2s;
+}
+
+.modified-badge {
+  background: var(--warning);
+  color: #1a1a2e;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
