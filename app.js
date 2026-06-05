@@ -47,7 +47,6 @@ const state = {
   bloqueData: null,
   unsubscribers: []
 };
-let isSaving = false;  // ← Agrega esta línea
 
 const $ = (id) => document.getElementById(id);
 const views = document.querySelectorAll(".view");
@@ -97,34 +96,8 @@ function showView(viewId) {
   views.forEach(v => v.classList.remove("view-active"));
   $(viewId)?.classList.add("view-active");
   navLinks.forEach(btn => btn.classList.toggle("active", btn.dataset.viewTarget === viewId));
-  updateSaveAllButtonVisibility(); // ← Agrega esta línea
 }
 
-function updateSaveAllButtonVisibility() {
-  const saveAllFloatBtn = document.getElementById("saveAllFloatBtn");
-  if (!saveAllFloatBtn) return;
-
-  const inPronosticosView = document.getElementById("matchesView")?.classList.contains("view-active");
-  
-  // 🔥 CAMBIO CLAVE: No usar .match-card.modified, recalcular desde los inputs actuales
-  let hasModifiedMatches = false;
-  const matchesContainer = document.getElementById("matchesContainer");
-  
-  if (matchesContainer && inPronosticosView && isPaymentApproved()) {
-    const inputs = matchesContainer.querySelectorAll(".score-input");
-    for (const input of inputs) {
-      const original = input.dataset.original || "";
-      const current = input.value;
-      if (original !== current) {
-        hasModifiedMatches = true;
-        break;
-      }
-    }
-  }
-  
-  const shouldShow = inPronosticosView && isPaymentApproved() && hasModifiedMatches;
-  saveAllFloatBtn.style.display = shouldShow ? "flex" : "none";
-}
 navLinks.forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.viewTarget)));
 
 el.themeToggle?.addEventListener("click", () => {
@@ -132,90 +105,14 @@ el.themeToggle?.addEventListener("click", () => {
   root.dataset.theme = root.dataset.theme === "light" ? "dark" : "light";
 });
 
-// Devuelve un <img> de bandera usando flagcdn.com (código ISO 3166-1 alpha-2)
-// Más fiable que emojis Unicode en Android/Windows
 function getFlagEmoji(name) {
   const map = {
-    // Grupo A
-    "México": "mx",
-    "Sudáfrica": "za",
-    "República de Corea": "kr",
-    "Corea del Sur": "kr",
-    "Chequia": "cz",
-    "República Checa": "cz",
-
-    // Grupo B
-    "Canadá": "ca",
-    "Bosnia y Herzegovina": "ba",
-    "Catar": "qa",
-    "Suiza": "ch",
-
-    // Grupo C
-    "Brasil": "br",
-    "Marruecos": "ma",
-    "Haití": "ht",
-    "Escocia": "gb-sct",   // flagcdn soporta subdivisiones
-
-    // Grupo D
-    "Estados Unidos": "us",
-    "EE. UU.": "us",
-    "Paraguay": "py",
-    "Australia": "au",
-    "Turquía": "tr",
-
-    // Grupo E
-    "Alemania": "de",
-    "Curazao": "cw",
-    "Costa de Marfil": "ci",
-    "Ecuador": "ec",
-
-    // Grupo F
-    "Países Bajos": "nl",
-    "Japón": "jp",
-    "Suecia": "se",
-    "Túnez": "tn",
-
-    // Grupo G
-    "Bélgica": "be",
-    "Egipto": "eg",
-    "Irán": "ir",
-    "Nueva Zelanda": "nz",
-
-    // Grupo H
-    "España": "es",
-    "Cabo Verde": "cv",
-    "Arabia Saudita": "sa",
-    "Uruguay": "uy",
-
-    // Grupo I
-    "Francia": "fr",
-    "Senegal": "sn",
-    "Irak": "iq",
-    "Noruega": "no",
-
-    // Grupo J
-    "Argentina": "ar",
-    "Argelia": "dz",
-    "Austria": "at",
-    "Jordania": "jo",
-
-    // Grupo K
-    "Portugal": "pt",
-    "RD Congo": "cd",
-    "República Democrática del Congo": "cd",
-    "Uzbekistán": "uz",
-    "Colombia": "co",
-
-    // Grupo L
-    "Inglaterra": "gb-eng",  // flagcdn soporta subdivisiones
-    "Croacia": "hr",
-    "Ghana": "gh",
-    "Panamá": "pa"
+    "México": "🇲🇽",
+    "Sudáfrica": "🇿🇦",
+    "Canadá": "🇨🇦",
+    "Estados Unidos": "🇺🇸"
   };
-
-  const code = map[name];
-  if (!code) return `<img src="https://flagcdn.com/w40/un.png" width="28" height="20" alt="?" style="border-radius:3px;object-fit:cover;">`;
-  return `<img src="https://flagcdn.com/w40/${code}.png" width="28" height="20" alt="${name}" title="${name}" style="border-radius:3px;object-fit:cover;">`;
+  return map[name] || "🏳️";
 }
 
 function computeCutoff(matchDate) {
@@ -457,18 +354,16 @@ function renderMatches() {
   
   const progressPercent = totalPartidos > 0 ? (pronosticados / totalPartidos) * 100 : 0;
   
-  // Barra de progreso (sin botón aquí)
   const progressHtml = `
-    <div class="progress-compact">
-      <div class="progress-stats">
-        <span class="progress-label">📊 Progreso</span>
-        <span class="progress-count">${pronosticados} / ${totalPartidos}</span>
-        <span class="progress-percent">${Math.round(progressPercent)}%</span>
+    <div class="progress-container glass-card">
+      <div class="progress-header">
+        <span>📊 Progreso de pronósticos</span>
+        <strong>${pronosticados} / ${totalPartidos} partidos</strong>
       </div>
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
       </div>
-      ${progressPercent === 100 ? '<span class="progress-complete">🎉 ¡Completaste todos!</span>' : '<span class="progress-hint">💡 Modificable hasta 1h antes</span>'}
+      <p class="progress-hint">${progressPercent === 100 ? '🎉 ¡Completaste todos los pronósticos de esta fase!' : '💡 Recuerda: puedes modificar tus pronósticos hasta 1 hora antes del partido'}</p>
     </div>
   `;
 
@@ -480,262 +375,71 @@ function renderMatches() {
     const countdown = getCountdown(date);
     const predId = `${state.currentUser.uid}_${partido.id}`;
     const pred = state.prediccionesMap.get(predId);
-    const tienePrediccion = !!pred;
-    const local = pred?.goles_pred_local ?? '';
-    const visita = pred?.goles_pred_visita ?? '';
+    const local = pred?.goles_pred_local ?? 0;
+    const visita = pred?.goles_pred_visita ?? 0;
     const locked = countdown.closed || !approved;
-    
-    // Determinar badge de estado
-    let statusBadge = '';
-    if (countdown.closed) {
-      statusBadge = `<span class="badge danger">🔒 Cerrado</span>`;
-    } else if (!approved) {
-      statusBadge = `<span class="badge warning">💰 Pago pendiente</span>`;
-    } else if (tienePrediccion) {
-      statusBadge = `<span class="badge success">✅ Pronosticado</span>`;
-    } else {
-      statusBadge = `<span class="badge info">⚽ Por pronosticar</span>`;
-    }
-    
-    const cardClass = tienePrediccion && !locked ? 'match-card predicted' : 'match-card';
-    const localValue = local !== '' ? local : '';
-    const visitaValue = visita !== '' ? visita : '';
+    const reasonBadge = countdown.closed
+      ? `<span class="badge danger">Pronósticos cerrados</span>`
+      : approved
+        ? `<span class="badge success">Habilitado</span>`
+        : `<span class="badge warning">Pago pendiente</span>`;
 
     return `
-      <article class="${cardClass} glass-card" data-match-id="${partido.id}">
+      <article class="glass-card match-card">
         <div class="match-head">
           <div>
             <div class="meta">${formatDateTime(date)}</div>
-            <div class="countdown ${countdown.closed ? 'closed' : ''}">${countdown.text}</div>
+            <div class="countdown">${countdown.text}</div>
           </div>
-          ${statusBadge}
+          ${reasonBadge}
         </div>
 
         <div class="team-block">
-          <div class="team-line">
-            <span class="flag">${getFlagEmoji(partido.equipo_local)}</span>
-            <strong>${partido.equipo_local}</strong>
-          </div>
-          <div class="team-line">
-            <span class="flag">${getFlagEmoji(partido.equipo_visita)}</span>
-            <strong>${partido.equipo_visita}</strong>
-          </div>
+          <div class="team-line"><span><span class="flag">${getFlagEmoji(partido.equipo_local)}</span> ${partido.equipo_local}</span></div>
+          <div class="team-line"><span><span class="flag">${getFlagEmoji(partido.equipo_visita)}</span> ${partido.equipo_visita}</span></div>
         </div>
 
         <div class="score-grid">
           <div class="score-box">
-            <label>Goles local</label>
+            <label for="local_${partido.id}">Goles local</label>
             <div class="stepper">
-              <button class="step-btn" data-step="down" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>-</button>
-              <input type="number" id="local_${partido.id}" class="score-input ${tienePrediccion ? 'has-value' : ''}" 
-                     data-original="${localValue}" data-match="${partido.id}" data-type="local"
-                     min="0" max="20" value="${localValue}" placeholder="?" ${locked ? "disabled" : ""}>
-              <button class="step-btn" data-step="up" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>+</button>
+              <button data-step="down" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>-</button>
+              <input id="local_${partido.id}" type="number" min="0" max="20" value="${local}" ${locked ? "disabled" : ""}>
+              <button data-step="up" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>+</button>
             </div>
           </div>
           <div class="score-box">
-            <label>Goles visita</label>
+            <label for="visita_${partido.id}">Goles visita</label>
             <div class="stepper">
-              <button class="step-btn" data-step="down" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>-</button>
-              <input type="number" id="visita_${partido.id}" class="score-input ${tienePrediccion ? 'has-value' : ''}" 
-                     data-original="${visitaValue}" data-match="${partido.id}" data-type="visita"
-                     min="0" max="20" value="${visitaValue}" placeholder="?" ${locked ? "disabled" : ""}>
-              <button class="step-btn" data-step="up" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>+</button>
+              <button data-step="down" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>-</button>
+              <input id="visita_${partido.id}" type="number" min="0" max="20" value="${visita}" ${locked ? "disabled" : ""}>
+              <button data-step="up" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>+</button>
             </div>
           </div>
         </div>
 
         <div class="match-footer">
-          <span class="pill fase-pill">${partido.bloque === 'fecha_1' ? 'Fase 1' : partido.bloque === 'fecha_2' ? 'Fase 2' : 'Fase 3'}</span>
-          <span class="modified-badge" id="modified_${partido.id}" style="display: none;">✏️ Modificado</span>
+          <span class="pill">${partido.bloque === 'fecha_1' ? 'Fase 1' : partido.bloque === 'fecha_2' ? 'Fase 2' : 'Fase 3'}</span>
+          ${!locked && `<button class="btn btn-primary save-prediction-btn" data-match-id="${partido.id}">${pred ? "Actualizar pronóstico" : "Guardar pronóstico"}</button>`}
         </div>
       </article>
     `;
   }).join("");
   
   matchesHtml += `</div>`;
-  
   el.matchesContainer.innerHTML = matchesHtml;
 
-  // Agregar event listeners para los steppers
   el.matchesContainer.querySelectorAll("[data-step]").forEach(btn => {
     btn.addEventListener("click", () => {
       const input = document.getElementById(btn.dataset.input);
-      if (input && !input.disabled) {
-        const current = Number(input.value || 0);
-        input.value = btn.dataset.step === "up" ? current + 1 : Math.max(0, current - 1);
-        input.dispatchEvent(new Event('change'));
-      }
+      const current = Number(input.value || 0);
+      input.value = btn.dataset.step === "up" ? current + 1 : Math.max(0, current - 1);
     });
   });
 
-  // Función para sincronizar el estado modificado de un partido
-  const syncMatchModifiedState = (matchId) => {
-    const matchCard = document.querySelector(`article[data-match-id="${matchId}"]`);
-    const localInput = document.getElementById(`local_${matchId}`);
-    const visitaInput = document.getElementById(`visita_${matchId}`);
-    const modifiedBadge = document.getElementById(`modified_${matchId}`);
-
-    if (!localInput || !visitaInput || !modifiedBadge || !matchCard) return;
-
-    const localOriginal = localInput.dataset.original || "";
-    const visitaOriginal = visitaInput.dataset.original || "";
-    const localCurrent = localInput.value;
-    const visitaCurrent = visitaInput.value;
-
-    const isChanged = localOriginal !== localCurrent || visitaOriginal !== visitaCurrent;
-
-    modifiedBadge.style.display = isChanged ? "inline-flex" : "none";
-    matchCard.classList.toggle("modified", isChanged);
-  };
-
-  // Detectar cambios en los inputs
-  el.matchesContainer.querySelectorAll(".score-input").forEach(input => {
-    const handler = () => {
-      syncMatchModifiedState(input.dataset.match);
-      updateSaveAllButtonVisibility();
-    };
-
-    input.addEventListener("input", handler);
-    input.addEventListener("change", handler);
+  el.matchesContainer.querySelectorAll(".save-prediction-btn").forEach(btn => {
+    btn.addEventListener("click", () => savePrediction(btn.dataset.matchId));
   });
-
-  // Crear botón flotante global si no existe
-  if (!document.getElementById("saveAllFloatBtn")) {
-    const btn = document.createElement("button");
-    btn.id = "saveAllFloatBtn";
-    btn.className = "btn-save-float";
-    btn.innerHTML = "💾 Guardar todos los cambios";
-    btn.style.display = "none";
-    document.body.appendChild(btn);
-    btn.onclick = () => saveAllPredictions();
-  }
-  
-  // 🔥 PASO IMPORTANTE: Sincronizar TODOS los partidos antes de actualizar la visibilidad del botón
-  // Esto asegura que los badges y clases reflejen los valores actuales
-  // 🔥 PASO IMPORTANTE: Sincronizar TODOS los partidos antes de actualizar la visibilidad del botón
-  // Solo ejecutar si NO estamos en medio de un guardado
-  if (!isSaving) {
-    for (const partido of state.partidos) {
-      syncMatchModifiedState(partido.id);
-    }
-  }
-  
-  // Actualizar visibilidad del botón basado en el estado sincronizado
-  updateSaveAllButtonVisibility();
-}
-
-// Nueva función para guardar TODOS los pronósticos modificados
-async function saveAllPredictions() {
-  if (isSaving) return;  // ← Evita ejecuciones simultáneas
-  isSaving = true;       // ← Marcar que estamos guardando
-  if (!isPaymentApproved()) {
-    alert("❌ Tu pago aún no ha sido aprobado.");
-    return;
-  }
-
-  const modifiedMatches = [];
-
-  for (const partido of state.partidos) {
-    const matchId = partido.id;
-    const localInput = document.getElementById(`local_${matchId}`);
-    const visitaInput = document.getElementById(`visita_${matchId}`);
-
-    if (!localInput || !visitaInput || localInput.disabled) continue;
-
-    const localOriginal = localInput.dataset.original || "";
-    const visitaOriginal = visitaInput.dataset.original || "";
-    const localCurrent = localInput.value;
-    const visitaCurrent = visitaInput.value;
-
-    if (localOriginal !== localCurrent || visitaOriginal !== visitaCurrent) {
-      if (localCurrent === "" || visitaCurrent === "") {
-        alert(`⚠️ El partido ${partido.equipo_local} vs ${partido.equipo_visita} tiene valores vacíos.`);
-        return;
-      }
-
-      modifiedMatches.push({
-        matchId: matchId,  // ← Asegurar que se llama "matchId"
-        goles_local: Math.max(0, Number(localCurrent)),
-        goles_visita: Math.max(0, Number(visitaCurrent))
-      });
-    }
-  }
-
-  if (modifiedMatches.length === 0) {
-    updateSaveAllButtonVisibility();
-    return;
-  }
-
-  if (!confirm(`¿Guardar ${modifiedMatches.length} pronóstico${modifiedMatches.length > 1 ? "s" : ""}?`)) {
-    return;
-  }
-
-  // Ocultar botón inmediatamente
-  const saveAllFloatBtn = document.getElementById("saveAllFloatBtn");
-  if (saveAllFloatBtn) {
-    saveAllFloatBtn.style.display = "none";
-  }
-
-  try {
-    const batch = writeBatch(db);
-
-    for (const match of modifiedMatches) {
-      const predId = `${state.currentUser.uid}_${match.matchId}`;
-      const predRef = doc(db, "predicciones", predId);
-
-      batch.set(predRef, {
-        uid: state.currentUser.uid,
-        partidoId: match.matchId,
-        goles_pred_local: match.goles_local,
-        goles_pred_visita: match.goles_visita,
-        puntos_ganados: 0,
-        fecha_registro: serverTimestamp()
-      }, { merge: true });
-    }
-
-    await batch.commit();
-
-    // 1) Actualizar estado local inmediatamente
-    for (const match of modifiedMatches) {
-      const predId = `${state.currentUser.uid}_${match.matchId}`;
-      state.prediccionesMap.set(predId, {
-        uid: state.currentUser.uid,
-        partidoId: match.matchId,
-        goles_pred_local: match.goles_local,
-        goles_pred_visita: match.goles_visita,
-        puntos_ganados: 0
-      });
-    }
-
-    // 2) Limpiar estado visual actual ANTES de rerenderizar
-    for (const match of modifiedMatches) {
-      const card = document.querySelector(`article[data-match-id="${match.matchId}"]`);
-      const badge = document.getElementById(`modified_${match.matchId}`);
-      const localInput = document.getElementById(`local_${match.matchId}`);
-      const visitaInput = document.getElementById(`visita_${match.matchId}`);
-
-      if (card) card.classList.remove("modified");
-      if (badge) badge.style.display = "none";
-
-      if (localInput) localInput.dataset.original = String(match.goles_local);
-      if (visitaInput) visitaInput.dataset.original = String(match.goles_visita);
-    }
-
-    // 3) Re-renderizar (esto recreará el HTML con los nuevos valores)
-    renderMatches();
-    
-    // 4) El botón ya está oculto, no necesitamos hacer nada más
-
-    alert(`✅ ${modifiedMatches.length} pronóstico${modifiedMatches.length > 1 ? "s" : ""} guardado${modifiedMatches.length > 1 ? "s" : ""}.`);
-    isSaving = false;  // ← Liberar después de terminar
-    renderMatches();
-  } catch (error) {
-    console.error("Error guardando predicciones:", error);
-    alert(`❌ Error al guardar: ${error.message}`);
-    isSaving = false;  // ← Liberar también en error
-    updateSaveAllButtonVisibility();
-  }
 }
 
 async function savePrediction(matchId) {
@@ -1074,85 +778,8 @@ function clearListeners() {
   state.unsubscribers = [];
 }
 
-// ==================== SELECTOR DE FASES ====================
-function initFechaSelector() {
-  const selectorFecha = document.getElementById("selectorFecha");
-  if (!selectorFecha) return;
-  
-  selectorFecha.addEventListener("change", async (e) => {
-    const nuevaFecha = e.target.value;
-    if (state.bloqueActual === nuevaFecha) return;
-    
-    console.log(`📅 Cambiando de ${state.bloqueActual} a ${nuevaFecha}`);
-    state.bloqueActual = nuevaFecha;
-    
-    // Actualizar textos de UI
-    const faseLabel = document.getElementById("currentFaseLabel");
-    if (faseLabel) {
-      const nombres = {
-        fecha_1: "Fase 1",
-        fecha_2: "Fase 2", 
-        fecha_3: "Fase 3"
-      };
-      faseLabel.textContent = nombres[nuevaFecha] || nuevaFecha;
-    }
-    
-    // Actualizar el título en el dashboard
-    const dashboardPill = document.querySelector("#dashboardView .panel-head .pill");
-    if (dashboardPill) {
-      const nombres = {
-        fecha_1: "Fase 1",
-        fecha_2: "Fase 2", 
-        fecha_3: "Fase 3"
-      };
-      dashboardPill.textContent = nombres[nuevaFecha] || nuevaFecha;
-    }
-    
-    // Recargar todos los listeners con la nueva fecha
-    if (state.currentUser) {
-      clearListeners();
-      setupRealtime(state.currentUser);
-    }
-    
-    // Mostrar feedback visual
-    const toast = document.createElement("div");
-    toast.textContent = `📅 Cambiado a ${nombres[nuevaFecha] || nuevaFecha}`;
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: var(--primary);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 40px;
-      z-index: 9999;
-      animation: fadeOut 2s ease forwards;
-      font-size: 14px;
-    `;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2000);
-  });
-}
-
-// Agregar la animación CSS
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes fadeOut {
-    0% { opacity: 1; transform: translateY(0); }
-    70% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-20px); }
-  }
-`;
-document.head.appendChild(style);
-
 function setupRealtime(user) {
   clearListeners();
-
-  // Actualizar el selector visualmente para mostrar la fecha actual
-  const selectorFecha = document.getElementById("selectorFecha");
-  if (selectorFecha && selectorFecha.value !== state.bloqueActual) {
-    selectorFecha.value = state.bloqueActual;
-  }
 
   state.unsubscribers.push(onSnapshot(doc(db, "usuarios", user.uid), snap => {
     state.currentUserDoc = snap.exists() ? snap.data() : null;
@@ -1163,7 +790,7 @@ function setupRealtime(user) {
   }));
 
   state.unsubscribers.push(onSnapshot(query(collection(db, "partidos"), where("bloque", "==", state.bloqueActual)), snap => {
-    state.partidos = snap.docs.map(d => ({ id: d.id, ...d.data() }));  // ✅ Incluye el id
+    state.partidos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderMatches();
     renderAdminMatches();
   }));
@@ -1189,12 +816,8 @@ function setupRealtime(user) {
   const bloqueRef = doc(db, "bloques", state.bloqueActual);
   state.unsubscribers.push(onSnapshot(bloqueRef, async snap => {
     if (!snap.exists()) {
-      let nombreFecha = "Fecha 1";
-      if (state.bloqueActual === "fecha_2") nombreFecha = "Fecha 2";
-      if (state.bloqueActual === "fecha_3") nombreFecha = "Fecha 3";
-      
       await setDoc(bloqueRef, {
-        nombre: nombreFecha,
+        nombre: "Fecha 1",
         valor_apuesta: 10000,
         porcentaje_admin: 0.15,
         porcentaje_premio_1: 0.70,
@@ -1243,7 +866,6 @@ function setupRealtime(user) {
   });
   overlay.addEventListener("click", closeMenu);
 
-  // Cerrar al navegar (móvil)
   document.querySelectorAll("[data-view-target]").forEach(btn => {
     btn.addEventListener("click", () => { if (window.innerWidth < 900) closeMenu(); });
   });
@@ -1265,30 +887,4 @@ onAuthStateChanged(auth, async user => {
   el.sidebar.classList.remove("hidden");
   showView("dashboardView");
   setupRealtime(user);
-  
-  // ===== INICIALIZAR SELECTOR DE FASES =====
-  initFechaSelector();
-  
-  // Actualizar label de fase actual en la vista de pagos
-  const faseLabel = document.getElementById("currentFaseLabel");
-  if (faseLabel) {
-    const nombres = {
-      fecha_1: "Fase 1",
-      fecha_2: "Fase 2", 
-      fecha_3: "Fase 3"
-    };
-    faseLabel.textContent = nombres[state.bloqueActual] || state.bloqueActual;
-  }
-  
-  // Actualizar el título en el dashboard
-  const dashboardPill = document.querySelector("#dashboardView .panel-head .pill");
-  if (dashboardPill) {
-    const nombres = {
-      fecha_1: "Fase 1",
-      fecha_2: "Fase 2", 
-      fecha_3: "Fase 3"
-    };
-    dashboardPill.textContent = nombres[state.bloqueActual] || state.bloqueActual;
-  }
 });
-
