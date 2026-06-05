@@ -125,7 +125,7 @@ function getFlagEmoji(name) {
     "Brasil": "🇧🇷",
     "Marruecos": "🇲🇦",
     "Haití": "🇭🇹",
-    "Escocia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+    "Escocia": "🏴 (Escocia)",
     
     // Grupo D
     "Estados Unidos": "🇺🇸",
@@ -178,7 +178,7 @@ function getFlagEmoji(name) {
     "Colombia": "🇨🇴",
     
     // Grupo L
-    "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+    "Inglaterra": "🇬🇧",
     "Croacia": "🇭🇷",
     "Ghana": "🇬🇭",
     "Panamá": "🇵🇦"
