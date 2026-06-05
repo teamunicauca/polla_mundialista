@@ -540,3 +540,82 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
   font-size: 0.7rem;
   font-weight: 600;
 }
+/* Botón flotante */
+.btn-save-float {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  color: white;
+  padding: 0.9rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  backdrop-filter: blur(4px);
+  animation: floatIn 0.3s ease-out;
+}
+
+.btn-save-float:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(16, 185, 129, 0.5);
+  filter: brightness(1.05);
+}
+
+.btn-save-float:active {
+  transform: translateY(0);
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Badge modificado - mejor contraste */
+.modified-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #f59e0b;
+  color: #1a1a2e;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  gap: 0.25rem;
+}
+
+.modified-badge::before {
+  content: "✏️";
+  font-size: 0.65rem;
+}
+
+/* Responsive para móvil */
+@media (max-width: 768px) {
+  .btn-save-float {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.7rem 1.2rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .main {
+    margin-left: var(--sidebar-w);
+  }
+}
