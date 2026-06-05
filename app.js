@@ -517,6 +517,135 @@ function calcularPuntosUsuarioEnFase(uid, partidosFase, prediccionesMap) {
 }
 
 // Renderiza el reporte completo
+// ==================== REPORTE DE RESULTADOS (VERSIÓN COMPACTA) ====================
+
+// Mapeo de nombres de equipos a siglas FIFA
+const siglasEquipos = {
+  // Grupo A
+  "México": "MEX",
+  "Sudáfrica": "RSA",
+  "República de Corea": "KOR",
+  "Corea del Sur": "KOR",
+  "Chequia": "CZE",
+  "República Checa": "CZE",
+  
+  // Grupo B
+  "Canadá": "CAN",
+  "Bosnia y Herzegovina": "BIH",
+  "Catar": "QAT",
+  "Suiza": "SUI",
+  
+  // Grupo C
+  "Brasil": "BRA",
+  "Marruecos": "MAR",
+  "Haití": "HAI",
+  "Escocia": "SCO",
+  
+  // Grupo D
+  "Estados Unidos": "USA",
+  "EE. UU.": "USA",
+  "Paraguay": "PAR",
+  "Australia": "AUS",
+  "Turquía": "TUR",
+  
+  // Grupo E
+  "Alemania": "GER",
+  "Curazao": "CUW",
+  "Costa de Marfil": "CIV",
+  "Ecuador": "ECU",
+  
+  // Grupo F
+  "Países Bajos": "NED",
+  "Japón": "JPN",
+  "Suecia": "SWE",
+  "Túnez": "TUN",
+  
+  // Grupo G
+  "Bélgica": "BEL",
+  "Egipto": "EGY",
+  "Irán": "IRN",
+  "Nueva Zelanda": "NZL",
+  
+  // Grupo H
+  "España": "ESP",
+  "Cabo Verde": "CPV",
+  "Arabia Saudita": "KSA",
+  "Uruguay": "URU",
+  
+  // Grupo I
+  "Francia": "FRA",
+  "Senegal": "SEN",
+  "Irak": "IRQ",
+  "Noruega": "NOR",
+  
+  // Grupo J
+  "Argentina": "ARG",
+  "Argelia": "ALG",
+  "Austria": "AUT",
+  "Jordania": "JOR",
+  
+  // Grupo K
+  "Portugal": "POR",
+  "RD Congo": "COD",
+  "República Democrática del Congo": "COD",
+  "Uzbekistán": "UZB",
+  "Colombia": "COL",
+  
+  // Grupo L
+  "Inglaterra": "ENG",
+  "Croacia": "CRO",
+  "Ghana": "GHA",
+  "Panamá": "PAN"
+};
+
+// Obtener sigla del equipo
+function getSiglaEquipo(nombre) {
+  return siglasEquipos[nombre] || nombre.substring(0, 3).toUpperCase();
+}
+
+// Calcula puntos para un usuario en una fase específica (versión optimizada para tabla)
+function calcularPuntosUsuarioEnFaseCompacto(uid, partidosFase, prediccionesMap) {
+  let totalPuntos = 0;
+  let partidosData = [];
+
+  for (const partido of partidosFase) {
+    const predKey = `${uid}_${partido.id}`;
+    const pred = prediccionesMap.get(predKey);
+    
+    let pronosticoLocal = "-";
+    let pronosticoVisita = "-";
+    let puntos = 0;
+    
+    if (pred) {
+      pronosticoLocal = pred.goles_pred_local;
+      pronosticoVisita = pred.goles_pred_visita;
+      
+      if (partido.estado === "finalizado") {
+        const esExacto = pred.goles_pred_local === partido.goles_reales_local && 
+                         pred.goles_pred_visita === partido.goles_reales_visita;
+        const esTendencia = !esExacto && 
+          getOutcome(pred.goles_pred_local, pred.goles_pred_visita) === 
+          getOutcome(partido.goles_reales_local, partido.goles_reales_visita);
+        
+        if (esExacto) {
+          puntos = 3;
+        } else if (esTendencia) {
+          puntos = 1;
+        }
+      }
+    }
+    
+    totalPuntos += puntos;
+    partidosData.push({
+      resultado: `${pronosticoLocal}-${pronosticoVisita}`,
+      puntos: puntos
+    });
+  }
+  
+  return { totalPuntos, partidosData };
+}
+
+// Renderiza el reporte compacto (estilo tabla)
 async function renderReporte() {
   const faseSeleccionada = document.getElementById("selectorFechaReporte")?.value || state.bloqueActual;
   
@@ -524,7 +653,9 @@ async function renderReporte() {
   const partidosFase = state.partidos.filter(p => p.bloque === faseSeleccionada);
   
   if (partidosFase.length === 0) {
-    el.reporteContainer.innerHTML = '<div class="glass-card panel-card"><p>No hay partidos registrados para esta fase.</p></div>';
+    if (el.reporteContainer) {
+      el.reporteContainer.innerHTML = '<div class="glass-card panel-card"><p>No hay partidos registrados para esta fase.</p></div>';
+    }
     return;
   }
 
@@ -533,139 +664,125 @@ async function renderReporte() {
   
   // Si no es admin y la fase no está finalizada, no mostrar el reporte
   if (!esAdmin && !faseFinalizada) {
-    el.reporteContainer.innerHTML = `
-      <div class="glass-card panel-card">
-        <div class="panel-head">
-          <h3>🔒 Reporte no disponible</h3>
+    if (el.reporteContainer) {
+      el.reporteContainer.innerHTML = `
+        <div class="glass-card panel-card">
+          <div class="panel-head">
+            <h3>🔒 Reporte no disponible</h3>
+          </div>
+          <p>El reporte de resultados estará disponible una vez que todos los partidos de esta fase estén finalizados.</p>
+          <p class="helper">📅 Vuelve más tarde para ver quién ganó esta fase y con qué puntajes.</p>
         </div>
-        <p>El reporte de resultados estará disponible una vez que todos los partidos de esta fase estén finalizados.</p>
-        <p class="helper">📅 Vuelve más tarde para ver quién ganó esta fase y con qué puntajes.</p>
-      </div>
-    `;
+      `;
+    }
     return;
   }
 
   // Obtener todos los usuarios que tienen predicciones en esta fase
-  const usuariosConPredicciones = new Set();
-  for (const [predId, pred] of state.prediccionesMap.entries()) {
-    const partido = partidosFase.find(p => p.id === pred.partidoId);
-    if (partido) {
-      usuariosConPredicciones.add(pred.uid);
-    }
-  }
-  
-  // También incluir usuarios que no tienen predicciones pero sí existen
+  const usuariosSet = new Set();
   for (const user of state.ranking) {
-    usuariosConPredicciones.add(user.uid);
+    usuariosSet.add(user.uid);
   }
-
-  // Calcular puntos por usuario
-  const rankingFase = [];
   
-  for (const uid of usuariosConPredicciones) {
+  // Calcular datos por usuario
+  const usuariosData = [];
+  for (const uid of usuariosSet) {
     const userInfo = state.ranking.find(u => u.uid === uid);
     const nombre = userInfo?.nombre || userInfo?.email || uid.substring(0, 8);
     const esAdminUser = userInfo?.esAdmin || false;
     
-    // Saltar admins del ranking normal (opcional)
+    // Saltar admins del reporte normal (opcional, comenta si quieres mostrarlos)
     // if (esAdminUser) continue;
     
-    const { totalPuntos, exactos, tendencias, detalles } = calcularPuntosUsuarioEnFase(uid, partidosFase, state.prediccionesMap);
+    const { totalPuntos, partidosData } = calcularPuntosUsuarioEnFaseCompacto(uid, partidosFase, state.prediccionesMap);
     
-    rankingFase.push({
+    usuariosData.push({
       uid,
       nombre,
       esAdmin: esAdminUser,
       totalPuntos,
-      exactos,
-      tendencias,
-      detalles
+      partidosData
     });
   }
   
   // Ordenar por puntos (mayor a menor)
-  rankingFase.sort((a, b) => b.totalPuntos - a.totalPuntos);
-
-  // Generar HTML del reporte
-  const faseNombre = faseSeleccionada === 'fecha_1' ? 'Fase 1' : faseSeleccionada === 'fecha_2' ? 'Fase 2' : 'Fase 3';
-  const tituloFinalizada = faseFinalizada ? '🏆 FASE FINALIZADA' : '📊 REPORTE EN VIVO (Admin)';
+  usuariosData.sort((a, b) => b.totalPuntos - a.totalPuntos);
   
-  let html = `
-    <div class="reporte-header glass-card">
+  // Generar cabeceras de la tabla
+  const faseNombre = faseSeleccionada === 'fecha_1' ? 'Fase 1' : faseSeleccionada === 'fecha_2' ? 'Fase 2' : 'Fase 3';
+  const titulo = faseFinalizada ? '🏆 FASE FINALIZADA' : '📊 REPORTE EN VIVO';
+  
+  // Cabeceras: Nombre + por cada partido: (sigla_local-sigla_visita) + Pts + luego Total
+  let headerRow = '<th class="col-nombre">👤 Usuario</th>';
+  
+  for (let i = 0; i < partidosFase.length; i++) {
+    const p = partidosFase[i];
+    const siglaLocal = getSiglaEquipo(p.equipo_local);
+    const siglaVisita = getSiglaEquipo(p.equipo_visita);
+    headerRow += `<th class="col-partido">${siglaLocal}-${siglaVisita}</th>`;
+    headerRow += `<th class="col-puntos-mini">Pts</th>`;
+  }
+  headerRow += '<th class="col-total">🎯 Total</th>';
+  
+  // Generar filas de la tabla
+  let tableRows = '';
+  for (let idx = 0; idx < usuariosData.length; idx++) {
+    const user = usuariosData[idx];
+    const posicion = idx + 1;
+    const medalClass = posicion === 1 ? 'row-gold' : posicion === 2 ? 'row-silver' : posicion === 3 ? 'row-bronze' : '';
+    const medalEmoji = posicion === 1 ? '🥇' : posicion === 2 ? '🥈' : posicion === 3 ? '🥉' : `${posicion}.`;
+    
+    let row = `<tr class="${medalClass}">`;
+    row += `<td class="col-nombre"><span class="medal">${medalEmoji}</span> ${user.nombre}${user.esAdmin ? ' 👑' : ''}</td>`;
+    
+    for (let i = 0; i < partidosFase.length; i++) {
+      const partidoData = user.partidosData[i] || { resultado: "-", puntos: 0 };
+      const puntosClass = partidoData.puntos === 3 ? 'pts-exacto' : partidoData.puntos === 1 ? 'pts-tendencia' : 'pts-cero';
+      
+      row += `<td class="col-resultado">${partidoData.resultado}</td>`;
+      row += `<td class="col-puntos-mini ${puntosClass}">${partidoData.puntos || ''}</td>`;
+    }
+    
+    row += `<td class="col-total"><strong>${user.totalPuntos}</strong></td>`;
+    row += `</tr>`;
+    tableRows += row;
+  }
+  
+  // Si no hay datos
+  if (usuariosData.length === 0) {
+    tableRows = `<tr><td colspan="${partidosFase.length * 2 + 2}" style="text-align: center;">No hay usuarios con pronósticos en esta fase.</td></tr>`;
+  }
+  
+  // HTML completo del reporte
+  const html = `
+    <div class="reporte-header-compact glass-card">
       <div>
-        <h3>${tituloFinalizada}</h3>
-        <p class="meta">${faseNombre} · ${partidosFase.length} partidos</p>
+        <h3>${titulo}</h3>
+        <p class="meta">${faseNombre} · ${partidosFase.length} partidos · ${usuariosData.length} participantes</p>
       </div>
-      <div class="reporte-stats">
-        <div class="stat"><span>👥 Participantes</span><strong>${rankingFase.length}</strong></div>
-        <div class="stat"><span>🏆 Primer lugar</span><strong>${rankingFase[0]?.nombre || '-'}</strong></div>
-        <div class="stat"><span>⭐ Puntaje máximo</span><strong>${rankingFase[0]?.totalPuntos || 0} pts</strong></div>
+      <div class="reporte-legend">
+        <span class="legend-exacto">■ Exacto (3pts)</span>
+        <span class="legend-tendencia">■ Tendencia (1pt)</span>
+        <span class="legend-error">■ Error (0pts)</span>
       </div>
     </div>
     
-    <div class="reporte-grid">
+    <div class="reporte-table-container">
+      <table class="reporte-table-compact">
+        <thead>
+          <tr>${headerRow}</tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    </div>
   `;
-
-  for (const [index, user] of rankingFase.entries()) {
-    const posicion = index + 1;
-    const medalClass = posicion === 1 ? 'gold' : posicion === 2 ? 'silver' : posicion === 3 ? 'bronze' : '';
-    const medalEmoji = posicion === 1 ? '🥇' : posicion === 2 ? '🥈' : posicion === 3 ? '🥉' : `#${posicion}`;
-    
-    html += `
-      <div class="reporte-card glass-card ${medalClass}">
-        <div class="reporte-card-header">
-          <div class="user-rank">${medalEmoji}</div>
-          <div class="user-info">
-            <strong>${user.nombre}</strong>
-            ${user.esAdmin ? '<span class="badge admin-badge">Admin</span>' : ''}
-          </div>
-          <div class="user-score">
-            <span class="total-points">${user.totalPuntos} pts</span>
-            <span class="detail-points">🎯 ${user.exactos} exactos · 📈 ${user.tendencias} tendencias</span>
-          </div>
-        </div>
-        
-        <div class="reporte-detalles">
-          <table class="reporte-table">
-            <thead>
-              <tr>
-                <th>Partido</th>
-                <th>Resultado</th>
-                <th>Pronóstico</th>
-                <th>Puntos</th>
-              </tr>
-            </thead>
-            <tbody>
-    `;
-    
-    for (const detalle of user.detalles) {
-      html += `
-        <tr>
-          <td>${detalle.partido}</td>
-          <td class="resultado">${detalle.resultado}</td>
-          <td class="pronostico ${detalle.puntos > 0 ? 'acertado' : ''}">${detalle.pronostico}</td>
-          <td class="puntos">${detalle.puntos > 0 ? `+${detalle.puntos}` : detalle.puntos}</td>
-        </tr>
-      `;
-    }
-    
-    html += `
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-  }
-
-  html += `</div>`;
   
-  if (rankingFase.length === 0) {
-    html = `<div class="glass-card panel-card"><p>No hay usuarios con pronósticos en esta fase.</p></div>`;
+  if (el.reporteContainer) {
+    el.reporteContainer.innerHTML = html;
   }
-  
-  el.reporteContainer.innerHTML = html;
 }
-
 // Inicializar selector de fechas para el reporte
 function initReporteFechaSelector() {
   const selector = document.getElementById("selectorFechaReporte");
