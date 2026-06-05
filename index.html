@@ -46,6 +46,7 @@
     </aside>
 
     <main class="main" id="mainContent">
+      <!-- Login View -->
       <section class="view view-active" id="loginView">
         <div class="login-shell glass-card">
           <span class="pill pill-accent">🏆 Mundial 2026 · Pronósticos por Fase</span>
@@ -63,6 +64,7 @@
         </div>
       </section>
 
+      <!-- Dashboard View -->
       <section class="view" id="dashboardView">
         <header class="view-header">
           <div>
@@ -127,6 +129,7 @@
         </div>
       </section>
 
+      <!-- Pronósticos View -->
       <section class="view" id="matchesView">
         <header class="view-header">
           <div>
@@ -143,11 +146,12 @@
           </div>
         </header>
         <div id="matchesGateMessage"></div>
-        <div id="matchesContainer">
+        <div id="matchesContainer" class="cards-grid">
           <div class="loading-skeleton">Cargando partidos...</div>
         </div>
       </section>
 
+      <!-- Pagos View -->
       <section class="view" id="paymentsView">
         <header class="view-header">
           <div>
@@ -186,6 +190,7 @@
         </div>
       </section>
 
+      <!-- Ranking View -->
       <section class="view" id="rankingView">
         <header class="view-header">
           <div>
@@ -200,6 +205,7 @@
         </div>
       </section>
 
+      <!-- Admin View -->
       <section class="view" id="adminView">
         <header class="view-header">
           <div>
@@ -234,6 +240,7 @@
   </div>
 
   <style>
+    /* Estilos adicionales para el selector de fechas */
     .fase-selector {
       display: flex;
       align-items: center;
@@ -243,10 +250,12 @@
       border-radius: 40px;
       border: 1px solid var(--border);
     }
+    
     .fase-selector label {
       font-size: 0.85rem;
       color: var(--muted);
     }
+    
     .fase-select {
       background: rgba(27, 76, 254, 0.1);
       border: 1px solid rgba(27, 76, 254, 0.3);
@@ -257,51 +266,65 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+    
     .fase-select:hover {
       background: rgba(27, 76, 254, 0.2);
       border-color: var(--primary);
     }
+    
     .fase-select:focus {
       outline: none;
       border-color: var(--primary);
     }
+    
     .loading-skeleton {
       text-align: center;
       padding: 2rem;
       color: var(--muted);
     }
+    
+    /* Mejoras responsive para móvil */
     @media (max-width: 768px) {
       .fase-selector {
         padding: 0.3rem 0.8rem;
       }
+      
       .fase-select {
         font-size: 0.75rem;
         padding: 0.3rem 0.6rem;
       }
+      
       .view-header {
         flex-wrap: wrap;
       }
+      
       .fase-selector {
         margin-left: 0 !important;
         width: 100%;
         justify-content: space-between;
       }
     }
+    
+    /* Animaciones */
     .match-card {
       transition: transform 0.2s, box-shadow 0.2s;
     }
+    
     .match-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     }
+    
     .btn {
       transition: all 0.2s ease;
     }
+    
     .btn:hover:not(:disabled) {
       transform: translateY(-1px);
       filter: brightness(1.05);
     }
   </style>
+
 
   <script type="module" src="./app.js"></script>
 </body>
