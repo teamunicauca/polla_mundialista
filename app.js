@@ -603,7 +603,7 @@ function renderMatches() {
 }
 
 
-// Nueva función para guardar TODOS los pronósticos modificados
+// Nueva función optimizada para guardar TODOS los pronósticos modificados
 async function saveAllPredictions() {
   if (!isPaymentApproved()) {
     alert("❌ Tu pago aún no ha sido aprobado.");
@@ -612,6 +612,7 @@ async function saveAllPredictions() {
 
   const modifiedMatches = [];
 
+  // 1. Recolectar partidos modificados
   for (const partido of state.partidos) {
     const matchId = partido.id;
     const localInput = document.getElementById(`local_${matchId}`);
@@ -633,9 +634,7 @@ async function saveAllPredictions() {
       modifiedMatches.push({
         matchId,
         goles_local: Math.max(0, Number(localCurrent)),
-        goles_visita: Math.max(0, Number(visitaCurrent)),
-        equipo_local: partido.equipo_local,
-        equipo_visita: partido.equipo_visita
+        goles_visita: Math.max(0, Number(visitaCurrent))
       });
     }
   }
@@ -649,13 +648,20 @@ async function saveAllPredictions() {
     return;
   }
 
-  let successCount = 0;
+  // 2. Forzar la desaparición del botón inmediatamente (Evita clics dobles)
+  const saveAllFloatBtn = document.getElementById("saveAllFloatBtn");
+  if (saveAllFloatBtn) saveAllFloatBtn.style.display = "none";
 
-  for (const match of modifiedMatches) {
-    try {
+  try {
+    // 3. Usar writeBatch para una escritura atómica. 
+    // Esto previene que onSnapshot se dispare múltiples veces arruinando el DOM.
+    const batch = writeBatch(db);
+
+    for (const match of modifiedMatches) {
       const predId = `${state.currentUser.uid}_${match.matchId}`;
-
-      await setDoc(doc(db, "predicciones", predId), {
+      const predRef = doc(db, "predicciones", predId);
+      
+      batch.set(predRef, {
         uid: state.currentUser.uid,
         partidoId: match.matchId,
         goles_pred_local: match.goles_local,
@@ -663,40 +669,22 @@ async function saveAllPredictions() {
         puntos_ganados: 0,
         fecha_registro: serverTimestamp()
       }, { merge: true });
-
-      successCount++;
-
-      const localInput = document.getElementById(`local_${match.matchId}`);
-      const visitaInput = document.getElementById(`visita_${match.matchId}`);
-      const modifiedBadge = document.getElementById(`modified_${match.matchId}`);
-      const matchCard = document.querySelector(`[data-match-id="${match.matchId}"]`);
-
-      if (localInput) {
-        localInput.dataset.original = String(match.goles_local);
-      }
-
-      if (visitaInput) {
-        visitaInput.dataset.original = String(match.goles_visita);
-      }
-
-      if (modifiedBadge) {
-        modifiedBadge.style.display = "none";
-      }
-
-      if (matchCard) {
-        matchCard.classList.remove("modified");
-      }
-    } catch (error) {
-      console.error(`Error guardando ${match.equipo_local} vs ${match.equipo_visita}:`, error);
-      alert(`❌ Error guardando ${match.equipo_local} vs ${match.equipo_visita}: ${error.message}`);
-      return;
     }
+
+    await batch.commit();
+
+    alert(`✅ ${modifiedMatches.length} pronóstico${modifiedMatches.length > 1 ? "s" : ""} guardado${modifiedMatches.length > 1 ? "s" : ""}.`);
+
+    // 4. Asegurarnos de que la UI se refresque y el estado del botón se valide
+    renderMatches();
+    updateSaveAllButtonVisibility();
+
+  } catch (error) {
+    console.error("Error guardando predicciones en lote:", error);
+    alert(`❌ Error al guardar: ${error.message}`);
+    // Si falla, volvemos a mostrar el botón para que puedan reintentar
+    updateSaveAllButtonVisibility(); 
   }
-
-  alert(`✅ ${successCount} pronóstico${successCount > 1 ? "s" : ""} guardado${successCount > 1 ? "s" : ""}.`);
-
-  renderMatches();
-  updateSaveAllButtonVisibility();
 }
 async function savePrediction(matchId) {
   if (!isPaymentApproved()) {
