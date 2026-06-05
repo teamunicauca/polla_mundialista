@@ -700,3 +700,195 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
     justify-content: center;
   }
 }
+/* ===== REPORTE DE RESULTADOS ===== */
+.reporte-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.reporte-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.reporte-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.reporte-stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.reporte-stats .stat {
+  text-align: center;
+}
+
+.reporte-stats .stat span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.reporte-stats .stat strong {
+  font-size: 1.3rem;
+  color: var(--primary-2);
+}
+
+.reporte-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.reporte-card {
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.reporte-card.gold {
+  border-left: 4px solid #fbbf24;
+  background: linear-gradient(135deg, var(--surface), rgba(251, 191, 36, 0.05));
+}
+
+.reporte-card.silver {
+  border-left: 4px solid #cbd5e1;
+}
+
+.reporte-card.bronze {
+  border-left: 4px solid #cd7f32;
+}
+
+.reporte-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.user-rank {
+  font-size: 1.8rem;
+  font-weight: 700;
+  min-width: 60px;
+}
+
+.user-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.user-info strong {
+  font-size: 1.1rem;
+}
+
+.admin-badge {
+  background: rgba(27, 76, 254, 0.2);
+  color: var(--primary-2);
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.user-score {
+  text-align: right;
+}
+
+.total-points {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-2);
+  display: block;
+}
+
+.detail-points {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.reporte-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.reporte-table th,
+.reporte-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.reporte-table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.reporte-table td.resultado {
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.reporte-table td.pronostico {
+  font-family: monospace;
+}
+
+.reporte-table td.pronostico.acertado {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.reporte-table td.puntos {
+  text-align: center;
+  font-weight: 600;
+}
+
+.fase-selector-reporte {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  padding: 0.5rem 1rem;
+  border-radius: 40px;
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+  .reporte-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .reporte-card-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .user-score {
+    text-align: center;
+  }
+  
+  .reporte-table {
+    font-size: 0.7rem;
+  }
+  
+  .reporte-table th,
+  .reporte-table td {
+    padding: 0.3rem;
+  }
+  
+  .fase-selector-reporte {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
