@@ -729,25 +729,6 @@ async function saveAllPredictions() {
   }
 }
 
-function syncMatchModifiedState(matchId) {
-  const matchCard = document.querySelector(`article[data-match-id="${matchId}"]`);
-  const localInput = document.getElementById(`local_${matchId}`);
-  const visitaInput = document.getElementById(`visita_${matchId}`);
-  const modifiedBadge = document.getElementById(`modified_${matchId}`);
-
-  if (!localInput || !visitaInput || !modifiedBadge || !matchCard) return;
-
-  const localOriginal = localInput.dataset.original || "";
-  const visitaOriginal = visitaInput.dataset.original || "";
-  const localCurrent = localInput.value;
-  const visitaCurrent = visitaInput.value;
-
-  const isChanged = localOriginal !== localCurrent || visitaOriginal !== visitaCurrent;
-
-  modifiedBadge.style.display = isChanged ? "inline-flex" : "none";
-  matchCard.classList.toggle("modified", isChanged);
-}
-
 async function savePrediction(matchId) {
   if (!isPaymentApproved()) {
     alert("Tu pago aún no ha sido aprobado.");
@@ -1173,7 +1154,7 @@ function setupRealtime(user) {
   }));
 
   state.unsubscribers.push(onSnapshot(query(collection(db, "partidos"), where("bloque", "==", state.bloqueActual)), snap => {
-    state.partidos = snap.docs.map(d => ({ ...d.data() }));
+    state.partidos = snap.docs.map(d => ({ id: d.id, ...d.data() }));  // ✅ Incluye el id
     renderMatches();
     renderAdminMatches();
   }));
