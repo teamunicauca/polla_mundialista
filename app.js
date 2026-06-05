@@ -1264,4 +1264,3 @@ onAuthStateChanged(auth, async user => {
     dashboardPill.textContent = nombres[state.bloqueActual] || state.bloqueActual;
   }
 });
-
