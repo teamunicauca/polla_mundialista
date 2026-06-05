@@ -700,3 +700,46 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
     justify-content: center;
   }
 }
+/* SOBREESCRITURA PARA QUE FUNCIONE CORRECTAMENTE */
+#matchesContainer {
+  display: block !important;
+}
+
+.floating-save-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  padding: 0.9rem 1.75rem;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+  cursor: pointer;
+  z-index: 999;
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-save-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(16, 185, 129, 0.5);
+  filter: brightness(1.1);
+}
+
+@media (max-width: 900px) {
+  .floating-save-btn {
+    bottom: 1.5rem;
+    right: 50%;
+    transform: translateX(50%);
+    width: calc(100% - 3rem);
+    justify-content: center;
+  }
+  .floating-save-btn:hover {
+    transform: translateX(50%) translateY(-2px);
+  }
+}
