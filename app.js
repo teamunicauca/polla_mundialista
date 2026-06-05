@@ -45,7 +45,8 @@ const state = {
   pagosMap: new Map(),
   bloqueActual: "fecha_1",
   bloqueData: null,
-  unsubscribers: []
+  unsubscribers: [],
+  cambiosPendientes: new Map() // <-- AÑADIDO: rastrea cambios locales no guardados
 };
 
 const $ = (id) => document.getElementById(id);
@@ -96,6 +97,7 @@ function showView(viewId) {
   views.forEach(v => v.classList.remove("view-active"));
   $(viewId)?.classList.add("view-active");
   navLinks.forEach(btn => btn.classList.toggle("active", btn.dataset.viewTarget === viewId));
+  renderFloatingSaveBtn(); // Al cambiar de pestaña, ocultamos el botón si no estamos en pronósticos
 }
 
 navLinks.forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.viewTarget)));
@@ -341,6 +343,107 @@ function recalcPoolFromPayments() {
   el.moneyPremio2.textContent = formatCOP(premio2);
 }
 
+// ==================== FUNCIONES PARA GUARDADO MÚLTIPLE ====================
+
+// Evalúa si el marcador actual difiere de la base de datos para activar/desactivar el estado visual
+function trackMatchChange(matchId) {
+  const localInput = document.getElementById(`local_${matchId}`);
+  const visitaInput = document.getElementById(`visita_${matchId}`);
+  if (!localInput || !visitaInput) return;
+
+  const currentLocal = Math.max(0, parseInt(localInput.value) || 0);
+  const currentVisita = Math.max(0, parseInt(visitaInput.value) || 0);
+
+  const predId = `${state.currentUser.uid}_${matchId}`;
+  const originalPred = state.prediccionesMap.get(predId);
+  const originalLocal = originalPred?.goles_pred_local ?? 0;
+  const originalVisita = originalPred?.goles_pred_visita ?? 0;
+
+  const cardElement = localInput.closest(".match-card");
+  const haCambiado = currentLocal !== originalLocal || currentVisita !== originalVisita;
+
+  if (haCambiado) {
+    state.cambiosPendientes.set(matchId, { goles_pred_local: currentLocal, goles_pred_visita: currentVisita });
+    cardElement?.classList.add("match-card-changed");
+  } else {
+    state.cambiosPendientes.delete(matchId);
+    cardElement?.classList.remove("match-card-changed");
+  }
+
+  renderFloatingSaveBtn();
+}
+
+// Controla cuándo mostrar u ocultar el botón flotante
+function renderFloatingSaveBtn() {
+  const btn = document.getElementById("floatingSaveBtn");
+  const countSpan = document.getElementById("floatingSaveCount");
+  const isForecastTab = document.getElementById("matchesView")?.classList.contains("view-active");
+
+  if (state.cambiosPendientes.size > 0 && isForecastTab && isPaymentApproved()) {
+    if (countSpan) countSpan.textContent = state.cambiosPendientes.size;
+    if (btn) btn.style.display = "flex";
+  } else {
+    if (btn) btn.style.display = "none";
+  }
+}
+
+// Guarda todos los marcadores modificados usando un WriteBatch eficiente de Firestore
+async function saveAllPredictions() {
+  if (!isPaymentApproved()) {
+    alert("❌ Tu pago aún no ha sido aprobado.");
+    return;
+  }
+  if (state.cambiosPendientes.size === 0) return;
+
+  const btn = document.getElementById("floatingSaveBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Guardando...";
+  }
+
+  try {
+    const batch = writeBatch(db);
+
+    for (const [matchId, scores] of state.cambiosPendientes.entries()) {
+      const match = state.partidos.find(p => p.id === matchId);
+      if (match) {
+        const countdown = getCountdown(match.fecha_hora.toDate());
+        if (countdown.closed) {
+          console.warn(`Partido ${matchId} cerrado, no se guardará`);
+          continue;
+        }
+      }
+      
+      const predRef = doc(db, "predicciones", `${state.currentUser.uid}_${matchId}`);
+      batch.set(predRef, {
+        uid: state.currentUser.uid,
+        partidoId: matchId,
+        goles_pred_local: scores.goles_pred_local,
+        goles_pred_visita: scores.goles_pred_visita,
+        puntos_ganados: 0,
+        fecha_registro: serverTimestamp()
+      }, { merge: true });
+    }
+
+    await batch.commit();
+    alert(`🎉 ¡Se guardaron con éxito ${state.cambiosPendientes.size} pronósticos!`);
+    
+    state.cambiosPendientes.clear();
+    renderFloatingSaveBtn();
+    renderMatches(); // Re-renderiza para limpiar las clases visuales de las tarjetas
+  } catch (error) {
+    console.error("Error al guardar en lote:", error);
+    alert("❌ Error al guardar: " + error.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = "💾 Guardar todos los cambios";
+    }
+  }
+}
+
+// ==================== RENDER MATCHES ====================
+
 function renderMatches() {
   const approved = isPaymentApproved();
   el.matchesGateMessage.innerHTML = approved ? "" : `<div class="card-gate">⚠️ Tu pago de esta fase está pendiente. Puedes ver los partidos, pero no guardar pronósticos hasta ser aprobado.</div>`;
@@ -355,18 +458,24 @@ function renderMatches() {
   const progressPercent = totalPartidos > 0 ? (pronosticados / totalPartidos) * 100 : 0;
   
   const progressHtml = `
-    <div class="progress-container glass-card">
-      <div class="progress-header">
-        <span>📊 Progreso de pronósticos</span>
-        <strong>${pronosticados} / ${totalPartidos} partidos</strong>
+    <div class="progress-compact glass-card">
+      <div class="progress-stats">
+        <span class="progress-label">📊 Progreso</span>
+        <span class="progress-count">${pronosticados} / ${totalPartidos}</span>
+        <span class="progress-percent">${Math.round(progressPercent)}%</span>
       </div>
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
       </div>
-      <p class="progress-hint">${progressPercent === 100 ? '🎉 ¡Completaste todos los pronósticos de esta fase!' : '💡 Recuerda: puedes modificar tus pronósticos hasta 1 hora antes del partido'}</p>
+      <p class="${progressPercent === 100 ? 'progress-complete' : 'progress-hint'}">
+        ${progressPercent === 100 
+          ? '🎉 ¡Completaste todos los pronósticos de esta fase!'
+          : '💡 Recuerda: puedes modificar tus pronósticos hasta 1 hora antes del partido'}
+      </p>
     </div>
   `;
 
+  // CORRECCIÓN PC: Inyectamos la barra y luego abrimos la grilla interna exclusivamente para las tarjetas
   let matchesHtml = progressHtml;
   matchesHtml += `<div class="cards-grid">`;
   
@@ -383,9 +492,13 @@ function renderMatches() {
       : approved
         ? `<span class="badge success">Habilitado</span>`
         : `<span class="badge warning">Pago pendiente</span>`;
+    
+    // Verificar si tiene cambios pendientes locales
+    const tieneCambioLocal = state.cambiosPendientes.has(partido.id);
+    const cardClass = `glass-card match-card${tieneCambioLocal ? " match-card-changed" : ""}`;
 
     return `
-      <article class="glass-card match-card">
+      <article class="${cardClass}" data-match-id="${partido.id}">
         <div class="match-head">
           <div>
             <div class="meta">${formatDateTime(date)}</div>
@@ -426,17 +539,29 @@ function renderMatches() {
     `;
   }).join("");
   
-  matchesHtml += `</div>`;
+  matchesHtml += `</div>`; // CERRAMOS EL DIV DE LA GRILLA INTERNA
   el.matchesContainer.innerHTML = matchesHtml;
 
+  // --- ESCUCHAR CAMBIOS PARA EL SISTEMA MASIVO ---
+  // Listener para cuando se hace click en los botones del stepper (+/-)
   el.matchesContainer.querySelectorAll("[data-step]").forEach(btn => {
     btn.addEventListener("click", () => {
-      const input = document.getElementById(btn.dataset.input);
-      const current = Number(input.value || 0);
-      input.value = btn.dataset.step === "up" ? current + 1 : Math.max(0, current - 1);
+      const inputId = btn.dataset.input;
+      const matchId = inputId.split("_")[1];
+      // Pequeño delay para que el input actualice su valor antes de trackear
+      setTimeout(() => trackMatchChange(matchId), 10);
     });
   });
 
+  // Listener por si el usuario escribe directamente con el teclado numérico
+  el.matchesContainer.querySelectorAll(".score-grid input").forEach(input => {
+    input.addEventListener("input", () => {
+      const matchId = input.id.split("_")[1];
+      trackMatchChange(matchId);
+    });
+  });
+
+  // Listener para guardado individual (se mantiene)
   el.matchesContainer.querySelectorAll(".save-prediction-btn").forEach(btn => {
     btn.addEventListener("click", () => savePrediction(btn.dataset.matchId));
   });
@@ -468,6 +593,10 @@ async function savePrediction(matchId) {
       puntos_ganados: 0,
       fecha_registro: serverTimestamp()
     }, { merge: false });
+    
+    // Limpiar cambios pendientes locales para este partido si existían
+    state.cambiosPendientes.delete(matchId);
+    renderFloatingSaveBtn();
     alert("Pronóstico guardado correctamente.");
   } catch (error) {
     alert(`Error al guardar: ${error.message}`);
@@ -869,6 +998,17 @@ function setupRealtime(user) {
   document.querySelectorAll("[data-view-target]").forEach(btn => {
     btn.addEventListener("click", () => { if (window.innerWidth < 900) closeMenu(); });
   });
+})();
+
+// ===== INICIALIZAR BOTÓN FLOTANTE =====
+(function initFloatingSaveButton() {
+  const btn = document.createElement("button");
+  btn.id = "floatingSaveBtn";
+  btn.className = "btn-save-float";
+  btn.innerHTML = '💾 Guardar cambios (<span id="floatingSaveCount">0</span>)';
+  btn.style.display = "none";
+  document.body.appendChild(btn);
+  btn.addEventListener("click", saveAllPredictions);
 })();
 
 onAuthStateChanged(auth, async user => {
