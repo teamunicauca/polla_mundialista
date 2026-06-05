@@ -556,7 +556,7 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
   transition: all 0.3s ease;
-  display: flex;
+  display: none;
   align-items: center;
   gap: 0.5rem;
   backdrop-filter: blur(4px);
