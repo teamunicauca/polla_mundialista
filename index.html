@@ -36,6 +36,8 @@
           <button class="nav-link" data-view-target="paymentsView">💰 Pagos</button>
           <button class="nav-link" data-view-target="rankingView">🏆 Ranking</button>
           <button class="nav-link hidden" id="adminNavBtn" data-view-target="adminView">⚙️ Administrador</button>
+          <button class="nav-link" data-view-target="reporteView">📋 Reporte</button>
+
         </nav>
       </div>
 
@@ -234,6 +236,26 @@
             </button>
             <p class="helper">⚠️ El cálculo actualiza puntos, exactos y tendencias por usuario para la fase seleccionada.</p>
           </article>
+        </div>
+      </section>
+            <!-- Reporte de Resultados View -->
+      <section class="view" id="reporteView">
+        <header class="view-header">
+          <div>
+            <p class="eyebrow">📊 Reporte de Resultados</p>
+            <h2>Resumen por fase</h2>
+          </div>
+          <div class="fase-selector-reporte">
+            <label for="selectorFechaReporte" class="meta">Seleccionar fase:</label>
+            <select id="selectorFechaReporte" class="pill fase-select">
+              <option value="fecha_1">📅 Fase 1 (11-18 Jun)</option>
+              <option value="fecha_2">📅 Fase 2 (18-25 Jun)</option>
+              <option value="fecha_3">📅 Fase 3 (25-30 Jun)</option>
+            </select>
+          </div>
+        </header>
+        <div id="reporteContainer" class="reporte-container">
+          <div class="loading-skeleton">Cargando reporte...</div>
         </div>
       </section>
     </main>
