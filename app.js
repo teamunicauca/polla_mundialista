@@ -96,6 +96,18 @@ function showView(viewId) {
   views.forEach(v => v.classList.remove("view-active"));
   $(viewId)?.classList.add("view-active");
   navLinks.forEach(btn => btn.classList.toggle("active", btn.dataset.viewTarget === viewId));
+  updateSaveAllButtonVisibility(); // ← Agrega esta línea
+}
+
+function updateSaveAllButtonVisibility() {
+  const saveAllFloatBtn = document.getElementById("saveAllFloatBtn");
+  if (!saveAllFloatBtn) return;
+
+  const inPronosticosView = document.getElementById("matchesView")?.classList.contains("view-active");
+  const hasModifiedMatches = document.querySelector(".match-card.modified") !== null;
+  const shouldShow = inPronosticosView && isPaymentApproved() && hasModifiedMatches;
+
+  saveAllFloatBtn.style.display = shouldShow ? "flex" : "none";
 }
 
 navLinks.forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.viewTarget)));
@@ -545,6 +557,7 @@ function renderMatches() {
   });
 
   // Detectar cambios en los inputs
+  // Detectar cambios en los inputs
   el.matchesContainer.querySelectorAll(".score-input").forEach(input => {
     input.addEventListener("change", () => {
       const matchId = input.dataset.match;
@@ -570,16 +583,23 @@ function renderMatches() {
           }
         }
       }
+      
+      updateSaveAllButtonVisibility(); // ← Agrega esta línea
     });
   });
-
-  // Botón flotante
-  const saveAllFloatBtn = document.getElementById("saveAllFloatBtn");
-
-  if (saveAllFloatBtn) {
-    saveAllFloatBtn.style.display = approved ? "flex" : "none";
-    saveAllFloatBtn.onclick = () => saveAllPredictions();
+// Crear botón flotante global si no existe
+  if (!document.getElementById("saveAllFloatBtn")) {
+    const btn = document.createElement("button");
+    btn.id = "saveAllFloatBtn";
+    btn.className = "btn-save-float";
+    btn.innerHTML = "💾 Guardar todos los cambios";
+    btn.style.display = "none";
+    document.body.appendChild(btn);
+    btn.onclick = () => saveAllPredictions();
   }
+  
+  updateSaveAllButtonVisibility();
+
 }
 
 
@@ -671,6 +691,7 @@ async function saveAllPredictions() {
   
   // Recargar la vista para actualizar los badges "Pronosticado"
   renderMatches();
+  updateSaveAllButtonVisibility(); // ← Agrega esta línea
 }
 async function savePrediction(matchId) {
   if (!isPaymentApproved()) {
@@ -1225,3 +1246,4 @@ onAuthStateChanged(auth, async user => {
     dashboardPill.textContent = nombres[state.bloqueActual] || state.bloqueActual;
   }
 });
+
