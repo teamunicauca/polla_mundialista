@@ -611,30 +611,27 @@ async function saveAllPredictions() {
   }
 
   const modifiedMatches = [];
-  
-  // Recorrer todos los inputs y detectar cambios
+
   for (const partido of state.partidos) {
     const matchId = partido.id;
     const localInput = document.getElementById(`local_${matchId}`);
     const visitaInput = document.getElementById(`visita_${matchId}`);
-    
+
     if (!localInput || !visitaInput || localInput.disabled) continue;
-    
+
     const localOriginal = localInput.dataset.original || "";
     const visitaOriginal = visitaInput.dataset.original || "";
     const localCurrent = localInput.value;
     const visitaCurrent = visitaInput.value;
-    
-    // Verificar si hubo cambio
+
     if (localOriginal !== localCurrent || visitaOriginal !== visitaCurrent) {
-      // Validar que no sea vacío
       if (localCurrent === "" || visitaCurrent === "") {
-        alert(`⚠️ El partido ${partido.equipo_local} vs ${partido.equipo_visita} tiene valores vacíos. Por favor completa ambos campos.`);
+        alert(`⚠️ El partido ${partido.equipo_local} vs ${partido.equipo_visita} tiene valores vacíos.`);
         return;
       }
-      
+
       modifiedMatches.push({
-        matchId: matchId,
+        matchId,
         goles_local: Math.max(0, Number(localCurrent)),
         goles_visita: Math.max(0, Number(visitaCurrent)),
         equipo_local: partido.equipo_local,
@@ -642,21 +639,22 @@ async function saveAllPredictions() {
       });
     }
   }
-  
+
   if (modifiedMatches.length === 0) {
-    alert("📋 No hay cambios pendientes para guardar.");
+    updateSaveAllButtonVisibility();
     return;
   }
-  
-  // Confirmar guardado masivo
-  const confirmMsg = `¿Guardar ${modifiedMatches.length} pronóstico${modifiedMatches.length > 1 ? 's' : ''}?\n\n`;
-  if (!confirm(confirmMsg + "¿Estás seguro?")) return;
-  
-  // Guardar cada predicción
+
+  if (!confirm(`¿Guardar ${modifiedMatches.length} pronóstico${modifiedMatches.length > 1 ? "s" : ""}?`)) {
+    return;
+  }
+
   let successCount = 0;
+
   for (const match of modifiedMatches) {
     try {
       const predId = `${state.currentUser.uid}_${match.matchId}`;
+
       await setDoc(doc(db, "predicciones", predId), {
         uid: state.currentUser.uid,
         partidoId: match.matchId,
@@ -665,33 +663,40 @@ async function saveAllPredictions() {
         puntos_ganados: 0,
         fecha_registro: serverTimestamp()
       }, { merge: true });
+
       successCount++;
-      
-      // Actualizar dataset original
+
       const localInput = document.getElementById(`local_${match.matchId}`);
       const visitaInput = document.getElementById(`visita_${match.matchId}`);
-      if (localInput) localInput.dataset.original = match.goles_local;
-      if (visitaInput) visitaInput.dataset.original = match.goles_visita;
-      
-      // Ocultar badge de modificado
       const modifiedBadge = document.getElementById(`modified_${match.matchId}`);
-      if (modifiedBadge) modifiedBadge.style.display = "none";
-      
-      // Quitar clase modified
-      const matchCard = document.querySelector(`article[data-match-id="${match.matchId}"]`);
-      if (matchCard) matchCard.classList.remove("modified");
-      
+      const matchCard = document.querySelector(`[data-match-id="${match.matchId}"]`);
+
+      if (localInput) {
+        localInput.dataset.original = String(match.goles_local);
+      }
+
+      if (visitaInput) {
+        visitaInput.dataset.original = String(match.goles_visita);
+      }
+
+      if (modifiedBadge) {
+        modifiedBadge.style.display = "none";
+      }
+
+      if (matchCard) {
+        matchCard.classList.remove("modified");
+      }
     } catch (error) {
       console.error(`Error guardando ${match.equipo_local} vs ${match.equipo_visita}:`, error);
       alert(`❌ Error guardando ${match.equipo_local} vs ${match.equipo_visita}: ${error.message}`);
+      return;
     }
   }
-  
-  alert(`✅ ${successCount} pronóstico${successCount > 1 ? 's' : ''} guardado${successCount > 1 ? 's' : ''} correctamente.`);
-  
-  // Recargar la vista para actualizar los badges "Pronosticado"
+
+  alert(`✅ ${successCount} pronóstico${successCount > 1 ? "s" : ""} guardado${successCount > 1 ? "s" : ""}.`);
+
   renderMatches();
-  updateSaveAllButtonVisibility(); // ← Agrega esta línea
+  updateSaveAllButtonVisibility();
 }
 async function savePrediction(matchId) {
   if (!isPaymentApproved()) {
