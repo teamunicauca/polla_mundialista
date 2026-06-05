@@ -619,3 +619,84 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
     margin-left: var(--sidebar-w);
   }
 }
+/* --- CORRECCIÓN BARRA DE PROGRESO EN PC --- */
+#matchesContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 1.5rem;
+}
+
+/* La grilla ahora se aplica exclusivamente al envoltorio interno de las tarjetas */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* --- FEEDBACK VISUAL: TARJETA MODIFICADA --- */
+.match-card-changed {
+  border: 2px solid #f59e0b !important; /* Color advertencia/amarillo */
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.2) !important;
+  position: relative;
+}
+
+.match-card-changed::before {
+  content: "✏️ Cambios sin guardar";
+  position: absolute;
+  top: -10px;
+  right: 15px;
+  background: #f59e0b;
+  color: #000000;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* --- BOTÓN FLOTANTE INTELIGENTE --- */
+.floating-save-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  padding: 0.95rem 1.75rem;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+  cursor: pointer;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  animation: floatIn 0.3s ease-out;
+}
+
+.floating-save-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(16, 185, 129, 0.5);
+  filter: brightness(1.05);
+}
+
+@keyframes floatIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Adaptación para pantallas móviles */
+@media (max-width: 768px) {
+  .floating-save-btn {
+    bottom: 1.5rem;
+    right: 50%;
+    transform: translateX(50%);
+    width: calc(100% - 3rem);
+    justify-content: center;
+  }
+}
