@@ -540,8 +540,6 @@ function renderMatches() {
   
   matchesHtml += `</div>`;
   
-  // Agregar botón flotante si hay pago aprobado
-    
   el.matchesContainer.innerHTML = matchesHtml;
 
   // Agregar event listeners para los steppers
@@ -556,6 +554,26 @@ function renderMatches() {
     });
   });
 
+  // Función para sincronizar el estado modificado de un partido
+  const syncMatchModifiedState = (matchId) => {
+    const matchCard = document.querySelector(`article[data-match-id="${matchId}"]`);
+    const localInput = document.getElementById(`local_${matchId}`);
+    const visitaInput = document.getElementById(`visita_${matchId}`);
+    const modifiedBadge = document.getElementById(`modified_${matchId}`);
+
+    if (!localInput || !visitaInput || !modifiedBadge || !matchCard) return;
+
+    const localOriginal = localInput.dataset.original || "";
+    const visitaOriginal = visitaInput.dataset.original || "";
+    const localCurrent = localInput.value;
+    const visitaCurrent = visitaInput.value;
+
+    const isChanged = localOriginal !== localCurrent || visitaOriginal !== visitaCurrent;
+
+    modifiedBadge.style.display = isChanged ? "inline-flex" : "none";
+    matchCard.classList.toggle("modified", isChanged);
+  };
+
   // Detectar cambios en los inputs
   el.matchesContainer.querySelectorAll(".score-input").forEach(input => {
     const handler = () => {
@@ -566,21 +584,27 @@ function renderMatches() {
     input.addEventListener("input", handler);
     input.addEventListener("change", handler);
   });
+
   // Crear botón flotante global si no existe
-    if (!document.getElementById("saveAllFloatBtn")) {
-      const btn = document.createElement("button");
-      btn.id = "saveAllFloatBtn";
-      btn.className = "btn-save-float";
-      btn.innerHTML = "💾 Guardar todos los cambios";
-      btn.style.display = "none";
-      document.body.appendChild(btn);
-      btn.onclick = () => saveAllPredictions();
-    }
-    
-    updateSaveAllButtonVisibility();
-
+  if (!document.getElementById("saveAllFloatBtn")) {
+    const btn = document.createElement("button");
+    btn.id = "saveAllFloatBtn";
+    btn.className = "btn-save-float";
+    btn.innerHTML = "💾 Guardar todos los cambios";
+    btn.style.display = "none";
+    document.body.appendChild(btn);
+    btn.onclick = () => saveAllPredictions();
   }
-
+  
+  // 🔥 PASO IMPORTANTE: Sincronizar TODOS los partidos antes de actualizar la visibilidad del botón
+  // Esto asegura que los badges y clases reflejen los valores actuales
+  for (const partido of state.partidos) {
+    syncMatchModifiedState(partido.id);
+  }
+  
+  // Actualizar visibilidad del botón basado en el estado sincronizado
+  updateSaveAllButtonVisibility();
+}
 
 // Nueva función para guardar TODOS los pronósticos modificados
 async function saveAllPredictions() {
