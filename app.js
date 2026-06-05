@@ -604,16 +604,17 @@ function getSiglaEquipo(nombre) {
 }
 
 // Calcula puntos para un usuario en una fase específica (versión optimizada para tabla)
-function calcularPuntosUsuarioEnFaseCompacto(uid, partidosFase, prediccionesMap) {
+// Calcula puntos para un usuario en una fase específica (versión para TODOS los usuarios)
+function calcularPuntosUsuarioEnFaseCompacto(uid, partidosFase, todasLasPrediccionesMap) {
   let totalPuntos = 0;
   let partidosData = [];
 
   for (const partido of partidosFase) {
     const predKey = `${uid}_${partido.id}`;
-    const pred = prediccionesMap.get(predKey);
+    const pred = todasLasPrediccionesMap.get(predKey);
     
-    let pronosticoLocal = "-";
-    let pronosticoVisita = "-";
+    let pronosticoLocal = "---";
+    let pronosticoVisita = "---";
     let puntos = 0;
     
     if (pred) {
@@ -645,7 +646,7 @@ function calcularPuntosUsuarioEnFaseCompacto(uid, partidosFase, prediccionesMap)
   return { totalPuntos, partidosData };
 }
 
-// Renderiza el reporte compacto (estilo tabla)
+// Renderiza el reporte compacto (estilo tabla) - VERSIÓN CORREGIDA
 async function renderReporte() {
   const faseSeleccionada = document.getElementById("selectorFechaReporte")?.value || state.bloqueActual;
   
@@ -678,7 +679,19 @@ async function renderReporte() {
     return;
   }
 
-  // Obtener todos los usuarios que tienen predicciones en esta fase
+  // 🔥 IMPORTANTE: Crear un Map con TODAS las predicciones de TODOS los usuarios
+  const todasLasPrediccionesMap = new Map();
+  
+  // Obtener todas las predicciones desde Firestore (no solo del usuario actual)
+  const prediccionesSnapshot = await getDocs(collection(db, "predicciones"));
+  for (const docSnap of prediccionesSnapshot.docs) {
+    todasLasPrediccionesMap.set(docSnap.id, docSnap.data());
+  }
+  
+  // También puedes combinar con las que ya tienes en state si están actualizadas
+  // pero para asegurar, usamos las de Firestore directamente
+
+  // Obtener todos los usuarios
   const usuariosSet = new Set();
   for (const user of state.ranking) {
     usuariosSet.add(user.uid);
@@ -691,10 +704,7 @@ async function renderReporte() {
     const nombre = userInfo?.nombre || userInfo?.email || uid.substring(0, 8);
     const esAdminUser = userInfo?.esAdmin || false;
     
-    // Saltar admins del reporte normal (opcional, comenta si quieres mostrarlos)
-    // if (esAdminUser) continue;
-    
-    const { totalPuntos, partidosData } = calcularPuntosUsuarioEnFaseCompacto(uid, partidosFase, state.prediccionesMap);
+    const { totalPuntos, partidosData } = calcularPuntosUsuarioEnFaseCompacto(uid, partidosFase, todasLasPrediccionesMap);
     
     usuariosData.push({
       uid,
@@ -710,7 +720,7 @@ async function renderReporte() {
   
   // Generar cabeceras de la tabla
   const faseNombre = faseSeleccionada === 'fecha_1' ? 'Fase 1' : faseSeleccionada === 'fecha_2' ? 'Fase 2' : 'Fase 3';
-  const titulo = faseFinalizada ? '🏆 FASE FINALIZADA' : '📊 REPORTE EN VIVO';
+  const titulo = faseFinalizada ? '🏆 FASE FINALIZADA' : '📊 REPORTE EN VIVO (Admin)';
   
   // Cabeceras: Nombre + por cada partido: (sigla_local-sigla_visita) + Pts + luego Total
   let headerRow = '<th class="col-nombre">👤 Usuario</th>';
@@ -736,11 +746,11 @@ async function renderReporte() {
     row += `<td class="col-nombre"><span class="medal">${medalEmoji}</span> ${user.nombre}${user.esAdmin ? ' 👑' : ''}</td>`;
     
     for (let i = 0; i < partidosFase.length; i++) {
-      const partidoData = user.partidosData[i] || { resultado: "-", puntos: 0 };
+      const partidoData = user.partidosData[i] || { resultado: "---", puntos: 0 };
       const puntosClass = partidoData.puntos === 3 ? 'pts-exacto' : partidoData.puntos === 1 ? 'pts-tendencia' : 'pts-cero';
       
       row += `<td class="col-resultado">${partidoData.resultado}</td>`;
-      row += `<td class="col-puntos-mini ${puntosClass}">${partidoData.puntos || ''}</td>`;
+      row += `<td class="col-puntos-mini ${puntosClass}">${partidoData.puntos > 0 ? partidoData.puntos : ''}</td>`;
     }
     
     row += `<td class="col-total"><strong>${user.totalPuntos}</strong></td>`;
@@ -764,6 +774,7 @@ async function renderReporte() {
         <span class="legend-exacto">■ Exacto (3pts)</span>
         <span class="legend-tendencia">■ Tendencia (1pt)</span>
         <span class="legend-error">■ Error (0pts)</span>
+        <span class="legend-sin">■ Sin pronóstico (---)</span>
       </div>
     </div>
     
@@ -783,6 +794,8 @@ async function renderReporte() {
     el.reporteContainer.innerHTML = html;
   }
 }
+
+
 // Inicializar selector de fechas para el reporte
 function initReporteFechaSelector() {
   const selector = document.getElementById("selectorFechaReporte");
