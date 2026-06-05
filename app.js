@@ -529,9 +529,7 @@ function renderMatches() {
   matchesHtml += `</div>`;
   
   // Agregar botón flotante si hay pago aprobado
-  const floatingBtnHtml = approved ? `<button id="saveAllFloatBtn" class="btn-save-float">💾 Guardar todos los cambios</button>` : '';
-  matchesHtml += floatingBtnHtml;
-  
+    
   el.matchesContainer.innerHTML = matchesHtml;
 
   // Agregar event listeners para los steppers
@@ -577,8 +575,10 @@ function renderMatches() {
 
   // Botón flotante
   const saveAllFloatBtn = document.getElementById("saveAllFloatBtn");
+
   if (saveAllFloatBtn) {
-    saveAllFloatBtn.addEventListener("click", () => saveAllPredictions());
+    saveAllFloatBtn.style.display = approved ? "flex" : "none";
+    saveAllFloatBtn.onclick = () => saveAllPredictions();
   }
 }
 
