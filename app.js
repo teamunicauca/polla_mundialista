@@ -610,7 +610,7 @@ async function saveAllPredictions() {
       }
 
       modifiedMatches.push({
-        matchId,
+        matchId: matchId,  // ← Asegurar que se llama "matchId"
         goles_local: Math.max(0, Number(localCurrent)),
         goles_visita: Math.max(0, Number(visitaCurrent))
       });
@@ -626,10 +626,10 @@ async function saveAllPredictions() {
     return;
   }
 
+  // Ocultar botón inmediatamente
   const saveAllFloatBtn = document.getElementById("saveAllFloatBtn");
   if (saveAllFloatBtn) {
     saveAllFloatBtn.style.display = "none";
-    saveAllFloatBtn.disabled = true;
   }
 
   try {
@@ -655,7 +655,6 @@ async function saveAllPredictions() {
     for (const match of modifiedMatches) {
       const predId = `${state.currentUser.uid}_${match.matchId}`;
       state.prediccionesMap.set(predId, {
-        ...(state.prediccionesMap.get(predId) || {}),
         uid: state.currentUser.uid,
         partidoId: match.matchId,
         goles_pred_local: match.goles_local,
@@ -664,8 +663,8 @@ async function saveAllPredictions() {
       });
     }
 
-    // 2) Limpiar estado visual actual antes de rerender
-    modifiedMatches.forEach(match => {
+    // 2) Limpiar estado visual actual ANTES de rerenderizar
+    for (const match of modifiedMatches) {
       const card = document.querySelector(`article[data-match-id="${match.matchId}"]`);
       const badge = document.getElementById(`modified_${match.matchId}`);
       const localInput = document.getElementById(`local_${match.matchId}`);
@@ -676,19 +675,19 @@ async function saveAllPredictions() {
 
       if (localInput) localInput.dataset.original = String(match.goles_local);
       if (visitaInput) visitaInput.dataset.original = String(match.goles_visita);
-    });
+    }
 
-    updateSaveAllButtonVisibility();
+    // 3) Re-renderizar (esto recreará el HTML con los nuevos valores)
     renderMatches();
+    
+    // 4) El botón ya está oculto, no necesitamos hacer nada más
 
     alert(`✅ ${modifiedMatches.length} pronóstico${modifiedMatches.length > 1 ? "s" : ""} guardado${modifiedMatches.length > 1 ? "s" : ""}.`);
 
   } catch (error) {
-    console.error("Error guardando predicciones en lote:", error);
+    console.error("Error guardando predicciones:", error);
     alert(`❌ Error al guardar: ${error.message}`);
     updateSaveAllButtonVisibility();
-  } finally {
-    if (saveAllFloatBtn) saveAllFloatBtn.disabled = false;
   }
 }
 
@@ -1264,3 +1263,4 @@ onAuthStateChanged(auth, async user => {
     dashboardPill.textContent = nombres[state.bloqueActual] || state.bloqueActual;
   }
 });
+
