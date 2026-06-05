@@ -557,53 +557,32 @@ function renderMatches() {
   });
 
   // Detectar cambios en los inputs
-  // Detectar cambios en los inputs
   el.matchesContainer.querySelectorAll(".score-input").forEach(input => {
-    input.addEventListener("change", () => {
-      const matchId = input.dataset.match;
-      const matchCard = document.querySelector(`article[data-match-id="${matchId}"]`);
-      const localInput = document.getElementById(`local_${matchId}`);
-      const visitaInput = document.getElementById(`visita_${matchId}`);
-      const modifiedBadge = document.getElementById(`modified_${matchId}`);
-      
-      if (localInput && visitaInput && modifiedBadge) {
-        const localOriginal = localInput.dataset.original || "";
-        const visitaOriginal = visitaInput.dataset.original || "";
-        const localCurrent = localInput.value;
-        const visitaCurrent = visitaInput.value;
-        
-        const isChanged = (localOriginal !== localCurrent) || (visitaOriginal !== visitaCurrent);
-        modifiedBadge.style.display = isChanged ? "inline-flex" : "none";
-        
-        if (matchCard) {
-          if (isChanged) {
-            matchCard.classList.add("modified");
-          } else {
-            matchCard.classList.remove("modified");
-          }
-        }
-      }
-      
-      updateSaveAllButtonVisibility(); // ← Agrega esta línea
-    });
+    const handler = () => {
+      syncMatchModifiedState(input.dataset.match);
+      updateSaveAllButtonVisibility();
+    };
+
+    input.addEventListener("input", handler);
+    input.addEventListener("change", handler);
   });
-// Crear botón flotante global si no existe
-  if (!document.getElementById("saveAllFloatBtn")) {
-    const btn = document.createElement("button");
-    btn.id = "saveAllFloatBtn";
-    btn.className = "btn-save-float";
-    btn.innerHTML = "💾 Guardar todos los cambios";
-    btn.style.display = "none";
-    document.body.appendChild(btn);
-    btn.onclick = () => saveAllPredictions();
+  // Crear botón flotante global si no existe
+    if (!document.getElementById("saveAllFloatBtn")) {
+      const btn = document.createElement("button");
+      btn.id = "saveAllFloatBtn";
+      btn.className = "btn-save-float";
+      btn.innerHTML = "💾 Guardar todos los cambios";
+      btn.style.display = "none";
+      document.body.appendChild(btn);
+      btn.onclick = () => saveAllPredictions();
+    }
+    
+    updateSaveAllButtonVisibility();
+
   }
-  
-  updateSaveAllButtonVisibility();
-
-}
 
 
-// Nueva función optimizada para guardar TODOS los pronósticos modificados
+// Nueva función para guardar TODOS los pronósticos modificados
 async function saveAllPredictions() {
   if (!isPaymentApproved()) {
     alert("❌ Tu pago aún no ha sido aprobado.");
@@ -612,7 +591,6 @@ async function saveAllPredictions() {
 
   const modifiedMatches = [];
 
-  // 1. Recolectar partidos modificados
   for (const partido of state.partidos) {
     const matchId = partido.id;
     const localInput = document.getElementById(`local_${matchId}`);
@@ -648,19 +626,19 @@ async function saveAllPredictions() {
     return;
   }
 
-  // 2. Forzar la desaparición del botón inmediatamente (Evita clics dobles)
   const saveAllFloatBtn = document.getElementById("saveAllFloatBtn");
-  if (saveAllFloatBtn) saveAllFloatBtn.style.display = "none";
+  if (saveAllFloatBtn) {
+    saveAllFloatBtn.style.display = "none";
+    saveAllFloatBtn.disabled = true;
+  }
 
   try {
-    // 3. Usar writeBatch para una escritura atómica. 
-    // Esto previene que onSnapshot se dispare múltiples veces arruinando el DOM.
     const batch = writeBatch(db);
 
     for (const match of modifiedMatches) {
       const predId = `${state.currentUser.uid}_${match.matchId}`;
       const predRef = doc(db, "predicciones", predId);
-      
+
       batch.set(predRef, {
         uid: state.currentUser.uid,
         partidoId: match.matchId,
@@ -673,19 +651,66 @@ async function saveAllPredictions() {
 
     await batch.commit();
 
-    alert(`✅ ${modifiedMatches.length} pronóstico${modifiedMatches.length > 1 ? "s" : ""} guardado${modifiedMatches.length > 1 ? "s" : ""}.`);
+    // 1) Actualizar estado local inmediatamente
+    for (const match of modifiedMatches) {
+      const predId = `${state.currentUser.uid}_${match.matchId}`;
+      state.prediccionesMap.set(predId, {
+        ...(state.prediccionesMap.get(predId) || {}),
+        uid: state.currentUser.uid,
+        partidoId: match.matchId,
+        goles_pred_local: match.goles_local,
+        goles_pred_visita: match.goles_visita,
+        puntos_ganados: 0
+      });
+    }
 
-    // 4. Asegurarnos de que la UI se refresque y el estado del botón se valide
-    renderMatches();
+    // 2) Limpiar estado visual actual antes de rerender
+    modifiedMatches.forEach(match => {
+      const card = document.querySelector(`article[data-match-id="${match.matchId}"]`);
+      const badge = document.getElementById(`modified_${match.matchId}`);
+      const localInput = document.getElementById(`local_${match.matchId}`);
+      const visitaInput = document.getElementById(`visita_${match.matchId}`);
+
+      if (card) card.classList.remove("modified");
+      if (badge) badge.style.display = "none";
+
+      if (localInput) localInput.dataset.original = String(match.goles_local);
+      if (visitaInput) visitaInput.dataset.original = String(match.goles_visita);
+    });
+
     updateSaveAllButtonVisibility();
+    renderMatches();
+
+    alert(`✅ ${modifiedMatches.length} pronóstico${modifiedMatches.length > 1 ? "s" : ""} guardado${modifiedMatches.length > 1 ? "s" : ""}.`);
 
   } catch (error) {
     console.error("Error guardando predicciones en lote:", error);
     alert(`❌ Error al guardar: ${error.message}`);
-    // Si falla, volvemos a mostrar el botón para que puedan reintentar
-    updateSaveAllButtonVisibility(); 
+    updateSaveAllButtonVisibility();
+  } finally {
+    if (saveAllFloatBtn) saveAllFloatBtn.disabled = false;
   }
 }
+
+function syncMatchModifiedState(matchId) {
+  const matchCard = document.querySelector(`article[data-match-id="${matchId}"]`);
+  const localInput = document.getElementById(`local_${matchId}`);
+  const visitaInput = document.getElementById(`visita_${matchId}`);
+  const modifiedBadge = document.getElementById(`modified_${matchId}`);
+
+  if (!localInput || !visitaInput || !modifiedBadge || !matchCard) return;
+
+  const localOriginal = localInput.dataset.original || "";
+  const visitaOriginal = visitaInput.dataset.original || "";
+  const localCurrent = localInput.value;
+  const visitaCurrent = visitaInput.value;
+
+  const isChanged = localOriginal !== localCurrent || visitaOriginal !== visitaCurrent;
+
+  modifiedBadge.style.display = isChanged ? "inline-flex" : "none";
+  matchCard.classList.toggle("modified", isChanged);
+}
+
 async function savePrediction(matchId) {
   if (!isPaymentApproved()) {
     alert("Tu pago aún no ha sido aprobado.");
