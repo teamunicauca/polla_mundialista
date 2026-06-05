@@ -324,7 +324,11 @@ code { background: rgba(255,255,255,.08); padding: .2rem .35rem; border-radius: 
     grid-template-columns: repeat(2, 1fr);
   }
 }
-
+@media (min-width: 1400px) {
+  .cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
 /* Tarjeta con pronóstico */
 .match-card.predicted {
   border-left: 3px solid var(--success);
