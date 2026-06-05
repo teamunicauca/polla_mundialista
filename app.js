@@ -430,7 +430,7 @@ function renderMatches() {
   
   const progressPercent = totalPartidos > 0 ? (pronosticados / totalPartidos) * 100 : 0;
   
-  // Barra de progreso COMPACTA
+  // Barra de progreso (sin botón aquí)
   const progressHtml = `
     <div class="progress-compact">
       <div class="progress-stats">
@@ -442,7 +442,6 @@ function renderMatches() {
         <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
       </div>
       ${progressPercent === 100 ? '<span class="progress-complete">🎉 ¡Completaste todos!</span>' : '<span class="progress-hint">💡 Modificable hasta 1h antes</span>'}
-      <button id="saveAllBtn" class="btn btn-secondary save-all-btn" ${!approved ? "disabled" : ""}>💾 Guardar todos los cambios</button>
     </div>
   `;
 
@@ -458,7 +457,6 @@ function renderMatches() {
     const local = pred?.goles_pred_local ?? '';
     const visita = pred?.goles_pred_visita ?? '';
     const locked = countdown.closed || !approved;
-    const isModified = false; // Track modifications
     
     // Determinar badge de estado
     let statusBadge = '';
@@ -522,13 +520,18 @@ function renderMatches() {
 
         <div class="match-footer">
           <span class="pill fase-pill">${partido.bloque === 'fecha_1' ? 'Fase 1' : partido.bloque === 'fecha_2' ? 'Fase 2' : 'Fase 3'}</span>
-          <span class="modified-badge" id="modified_${partido.id}" style="display: none; font-size: 0.7rem; color: var(--warning);">✏️ Modificado</span>
+          <span class="modified-badge" id="modified_${partido.id}" style="display: none;">✏️ Modificado</span>
         </div>
       </article>
     `;
   }).join("");
   
   matchesHtml += `</div>`;
+  
+  // Agregar botón flotante si hay pago aprobado
+  const floatingBtnHtml = approved ? `<button id="saveAllFloatBtn" class="btn-save-float">💾 Guardar todos los cambios</button>` : '';
+  matchesHtml += floatingBtnHtml;
+  
   el.matchesContainer.innerHTML = matchesHtml;
 
   // Agregar event listeners para los steppers
@@ -538,7 +541,6 @@ function renderMatches() {
       if (input && !input.disabled) {
         const current = Number(input.value || 0);
         input.value = btn.dataset.step === "up" ? current + 1 : Math.max(0, current - 1);
-        // Trigger change event to detect modification
         input.dispatchEvent(new Event('change'));
       }
     });
@@ -560,7 +562,7 @@ function renderMatches() {
         const visitaCurrent = visitaInput.value;
         
         const isChanged = (localOriginal !== localCurrent) || (visitaOriginal !== visitaCurrent);
-        modifiedBadge.style.display = isChanged ? "inline-block" : "none";
+        modifiedBadge.style.display = isChanged ? "inline-flex" : "none";
         
         if (matchCard) {
           if (isChanged) {
@@ -573,14 +575,90 @@ function renderMatches() {
     });
   });
 
-  // Guardar todos los cambios pendientes
-  const saveAllBtn = document.getElementById("saveAllBtn");
-  if (saveAllBtn) {
-    saveAllBtn.addEventListener("click", () => saveAllPredictions());
+  // Botón flotante
+  const saveAllFloatBtn = document.getElementById("saveAllFloatBtn");
+  if (saveAllFloatBtn) {
+    saveAllFloatBtn.addEventListener("click", () => saveAllPredictions());
+  }
+}
+
+// Función para guardar TODOS los pronósticos modificados (igual que antes)
+async function saveAllPredictions() {
+  if (!isPaymentApproved()) {
+    alert("❌ Tu pago aún no ha sido aprobado.");
+    return;
   }
 
-  // Agregar event listeners para guardar individual (opcional)
-  // Ya no mostramos botones individuales, todo se guarda con el botón global
+  const modifiedMatches = [];
+  
+  for (const partido of state.partidos) {
+    const matchId = partido.id;
+    const localInput = document.getElementById(`local_${matchId}`);
+    const visitaInput = document.getElementById(`visita_${matchId}`);
+    
+    if (!localInput || !visitaInput || localInput.disabled) continue;
+    
+    const localOriginal = localInput.dataset.original || "";
+    const visitaOriginal = visitaInput.dataset.original || "";
+    const localCurrent = localInput.value;
+    const visitaCurrent = visitaInput.value;
+    
+    if (localOriginal !== localCurrent || visitaOriginal !== visitaCurrent) {
+      if (localCurrent === "" || visitaCurrent === "") {
+        alert(`⚠️ El partido ${partido.equipo_local} vs ${partido.equipo_visita} tiene valores vacíos.`);
+        return;
+      }
+      
+      modifiedMatches.push({
+        matchId: matchId,
+        goles_local: Math.max(0, Number(localCurrent)),
+        goles_visita: Math.max(0, Number(visitaCurrent)),
+        equipo_local: partido.equipo_local,
+        equipo_visita: partido.equipo_visita
+      });
+    }
+  }
+  
+  if (modifiedMatches.length === 0) {
+    alert("📋 No hay cambios pendientes para guardar.");
+    return;
+  }
+  
+  if (!confirm(`¿Guardar ${modifiedMatches.length} pronóstico${modifiedMatches.length > 1 ? 's' : ''}?`)) return;
+  
+  let successCount = 0;
+  for (const match of modifiedMatches) {
+    try {
+      const predId = `${state.currentUser.uid}_${match.matchId}`;
+      await setDoc(doc(db, "predicciones", predId), {
+        uid: state.currentUser.uid,
+        partidoId: match.matchId,
+        goles_pred_local: match.goles_local,
+        goles_pred_visita: match.goles_visita,
+        puntos_ganados: 0,
+        fecha_registro: serverTimestamp()
+      }, { merge: true });
+      successCount++;
+      
+      const localInput = document.getElementById(`local_${match.matchId}`);
+      const visitaInput = document.getElementById(`visita_${match.matchId}`);
+      if (localInput) localInput.dataset.original = match.goles_local;
+      if (visitaInput) visitaInput.dataset.original = match.goles_visita;
+      
+      const modifiedBadge = document.getElementById(`modified_${match.matchId}`);
+      if (modifiedBadge) modifiedBadge.style.display = "none";
+      
+      const matchCard = document.querySelector(`article[data-match-id="${match.matchId}"]`);
+      if (matchCard) matchCard.classList.remove("modified");
+      
+    } catch (error) {
+      console.error(`Error guardando ${match.equipo_local} vs ${match.equipo_visita}:`, error);
+      alert(`❌ Error guardando ${match.equipo_local} vs ${match.equipo_visita}: ${error.message}`);
+    }
+  }
+  
+  alert(`✅ ${successCount} pronóstico${successCount > 1 ? 's' : ''} guardado${successCount > 1 ? 's' : ''}.`);
+  renderMatches();
 }
 
 // Nueva función para guardar TODOS los pronósticos modificados
