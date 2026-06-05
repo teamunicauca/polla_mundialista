@@ -341,58 +341,6 @@ function recalcPoolFromPayments() {
   el.moneyPremio2.textContent = formatCOP(premio2);
 }
 
-// ==================== FUNCIONES PARA GUARDADO MÚLTIPLE ====================
-
-function getPredictionKey(matchId) {
-  if (!state.currentUser) return null;
-  return `${state.currentUser.uid}_${matchId}`;
-}
-
-function isPredictionChanged(matchId) {
-  const key = getPredictionKey(matchId);
-  if (!key) return false;
-
-  const pred = state.prediccionesMap.get(key);
-  const localInput = document.getElementById(`local_${matchId}`);
-  const visitaInput = document.getElementById(`visita_${matchId}`);
-  if (!localInput || !visitaInput) return false;
-
-  const currentLocal = Math.max(0, Number(localInput.value || 0));
-  const currentVisita = Math.max(0, Number(visitaInput.value || 0));
-
-  const savedLocal = pred?.goles_pred_local ?? 0;
-  const savedVisita = pred?.goles_pred_visita ?? 0;
-
-  return currentLocal !== savedLocal || currentVisita !== savedVisita;
-}
-
-function updateFloatingSaveVisibility() {
-  const saveFloatBtn = document.getElementById('saveAllFloatBtn');
-  if (!saveFloatBtn) return;
-
-  const modifiedCards = document.querySelectorAll('.match-card.modified');
-  saveFloatBtn.style.display = modifiedCards.length ? 'flex' : 'none';
-}
-
-function markMatchAsModified(matchId) {
-  const article = document.querySelector(`.match-card[data-match-id="${matchId}"]`);
-  if (!article) return;
-
-  const badge = article.querySelector('.modified-badge');
-
-  if (isPredictionChanged(matchId)) {
-    article.classList.add('modified');
-    if (badge) badge.style.display = 'inline-flex';
-  } else {
-    article.classList.remove('modified');
-    if (badge) badge.style.display = 'none';
-  }
-
-  updateFloatingSaveVisibility();
-}
-
-// ==================== RENDER MATCHES ====================
-
 function renderMatches() {
   const approved = isPaymentApproved();
   el.matchesGateMessage.innerHTML = approved ? "" : `<div class="card-gate">⚠️ Tu pago de esta fase está pendiente. Puedes ver los partidos, pero no guardar pronósticos hasta ser aprobado.</div>`;
@@ -406,103 +354,73 @@ function renderMatches() {
   
   const progressPercent = totalPartidos > 0 ? (pronosticados / totalPartidos) * 100 : 0;
   
-  // Barra de progreso (sin contenedor extra)
   const progressHtml = `
-    <div class="progress-stats">
-      <span class="progress-label">📊 Progreso</span>
-      <span class="progress-count">${pronosticados} / ${totalPartidos}</span>
-      <span class="progress-percent">${Math.round(progressPercent)}%</span>
+    <div class="progress-container glass-card">
+      <div class="progress-header">
+        <span>📊 Progreso de pronósticos</span>
+        <strong>${pronosticados} / ${totalPartidos} partidos</strong>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+      </div>
+      <p class="progress-hint">${progressPercent === 100 ? '🎉 ¡Completaste todos los pronósticos de esta fase!' : '💡 Recuerda: puedes modificar tus pronósticos hasta 1 hora antes del partido'}</p>
     </div>
-    <div class="progress-bar-bg">
-      <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
-    </div>
-    <p class="${progressPercent === 100 ? 'progress-complete' : 'progress-hint'}">
-      ${progressPercent === 100 
-        ? '🎉 ¡Completaste todos los pronósticos de esta fase!'
-        : '💡 Recuerda: puedes modificar tus pronósticos hasta 1 hora antes del partido'}
-    </p>
   `;
 
-  let matchesHtml = `
-    <div class="progress-compact glass-card">
-      ${progressHtml}
-    </div>
-    <div class="cards-grid">
-  `;
+  let matchesHtml = progressHtml;
+  matchesHtml += `<div class="cards-grid">`;
   
   matchesHtml += state.partidos.map(partido => {
     const date = partido.fecha_hora.toDate();
     const countdown = getCountdown(date);
     const predId = `${state.currentUser.uid}_${partido.id}`;
     const pred = state.prediccionesMap.get(predId);
-    const tienePrediccion = !!pred;
     const local = pred?.goles_pred_local ?? 0;
     const visita = pred?.goles_pred_visita ?? 0;
     const locked = countdown.closed || !approved;
-    
-    // Determinar badge de estado
-    let statusBadge = '';
-    if (countdown.closed) {
-      statusBadge = `<span class="badge danger">🔒 Cerrado</span>`;
-    } else if (!approved) {
-      statusBadge = `<span class="badge warning">💰 Pago pendiente</span>`;
-    } else if (tienePrediccion) {
-      statusBadge = `<span class="badge success">✅ Pronosticado</span>`;
-    } else {
-      statusBadge = `<span class="badge info">⚽ Por pronosticar</span>`;
-    }
-    
-    const baseClasses = ['glass-card', 'match-card'];
-    if (tienePrediccion && !locked) baseClasses.push('predicted');
+    const reasonBadge = countdown.closed
+      ? `<span class="badge danger">Pronósticos cerrados</span>`
+      : approved
+        ? `<span class="badge success">Habilitado</span>`
+        : `<span class="badge warning">Pago pendiente</span>`;
 
     return `
-      <article class="${baseClasses.join(' ')}" data-match-id="${partido.id}">
+      <article class="glass-card match-card">
         <div class="match-head">
           <div>
             <div class="meta">${formatDateTime(date)}</div>
-            <div class="countdown ${countdown.closed ? 'closed' : ''}">${countdown.text}</div>
+            <div class="countdown">${countdown.text}</div>
           </div>
-          ${statusBadge}
+          ${reasonBadge}
         </div>
 
         <div class="team-block">
-          <div class="team-line">
-            <span class="flag">${getFlagEmoji(partido.equipo_local)}</span>
-            <strong>${partido.equipo_local}</strong>
-          </div>
-          <div class="team-line">
-            <span class="flag">${getFlagEmoji(partido.equipo_visita)}</span>
-            <strong>${partido.equipo_visita}</strong>
-          </div>
+          <div class="team-line"><span><span class="flag">${getFlagEmoji(partido.equipo_local)}</span> ${partido.equipo_local}</span></div>
+          <div class="team-line"><span><span class="flag">${getFlagEmoji(partido.equipo_visita)}</span> ${partido.equipo_visita}</span></div>
         </div>
 
         <div class="score-grid">
           <div class="score-box">
-            <label>Goles local</label>
+            <label for="local_${partido.id}">Goles local</label>
             <div class="stepper">
-              <button class="step-btn" data-step="down" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>-</button>
-              <input type="number" id="local_${partido.id}" class="score-input ${tienePrediccion ? 'has-value' : ''}" 
-                     min="0" max="20" value="${local}" ${locked ? "disabled" : ""}>
-              <button class="step-btn" data-step="up" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>+</button>
+              <button data-step="down" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>-</button>
+              <input id="local_${partido.id}" type="number" min="0" max="20" value="${local}" ${locked ? "disabled" : ""}>
+              <button data-step="up" data-input="local_${partido.id}" ${locked ? "disabled" : ""}>+</button>
             </div>
           </div>
           <div class="score-box">
-            <label>Goles visita</label>
+            <label for="visita_${partido.id}">Goles visita</label>
             <div class="stepper">
-              <button class="step-btn" data-step="down" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>-</button>
-              <input type="number" id="visita_${partido.id}" class="score-input ${tienePrediccion ? 'has-value' : ''}" 
-                     min="0" max="20" value="${visita}" ${locked ? "disabled" : ""}>
-              <button class="step-btn" data-step="up" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>+</button>
+              <button data-step="down" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>-</button>
+              <input id="visita_${partido.id}" type="number" min="0" max="20" value="${visita}" ${locked ? "disabled" : ""}>
+              <button data-step="up" data-input="visita_${partido.id}" ${locked ? "disabled" : ""}>+</button>
             </div>
           </div>
         </div>
 
         <div class="match-footer">
-          <div class="footer-left">
-            <span class="pill fase-pill">${partido.bloque === 'fecha_1' ? 'Fase 1' : partido.bloque === 'fecha_2' ? 'Fase 2' : 'Fase 3'}</span>
-            <span class="modified-badge" style="display: none;">✏️ Modificado</span>
-          </div>
-          ${!locked ? `<button class="btn btn-primary save-prediction-btn" data-match-id="${partido.id}">${tienePrediccion ? "Actualizar pronóstico" : "Guardar pronóstico"}</button>` : ''}
+          <span class="pill">${partido.bloque === 'fecha_1' ? 'Fase 1' : partido.bloque === 'fecha_2' ? 'Fase 2' : 'Fase 3'}</span>
+          ${!locked && `<button class="btn btn-primary save-prediction-btn" data-match-id="${partido.id}">${pred ? "Actualizar pronóstico" : "Guardar pronóstico"}</button>`}
         </div>
       </article>
     `;
@@ -511,53 +429,18 @@ function renderMatches() {
   matchesHtml += `</div>`;
   el.matchesContainer.innerHTML = matchesHtml;
 
-  // Event listeners para steppers
   el.matchesContainer.querySelectorAll("[data-step]").forEach(btn => {
     btn.addEventListener("click", () => {
       const input = document.getElementById(btn.dataset.input);
-      if (input && !input.disabled) {
-        const current = Number(input.value || 0);
-        input.value = btn.dataset.step === "up" ? current + 1 : Math.max(0, current - 1);
-        const matchId = input.id.replace(/^(local_|visita_)/, '');
-        markMatchAsModified(matchId);
-      }
+      const current = Number(input.value || 0);
+      input.value = btn.dataset.step === "up" ? current + 1 : Math.max(0, current - 1);
     });
   });
 
-  // Event listeners para inputs (detección de cambios manuales)
-  el.matchesContainer.querySelectorAll('.score-input').forEach(input => {
-    input.addEventListener('input', () => {
-      const matchId = input.id.replace(/^(local_|visita_)/, '');
-      markMatchAsModified(matchId);
-    });
-  });
-
-  // Event listeners para guardado individual
   el.matchesContainer.querySelectorAll(".save-prediction-btn").forEach(btn => {
     btn.addEventListener("click", () => savePrediction(btn.dataset.matchId));
   });
-
-  // Sincronizar estado visual de cada tarjeta
-  for (const partido of state.partidos) {
-    markMatchAsModified(partido.id);
-  }
-
-  // Crear botón flotante global si no existe
-  let saveFloatBtn = document.getElementById('saveAllFloatBtn');
-  if (!saveFloatBtn) {
-    saveFloatBtn = document.createElement('button');
-    saveFloatBtn.id = 'saveAllFloatBtn';
-    saveFloatBtn.className = 'btn-save-float';
-    saveFloatBtn.innerHTML = '💾 Guardar todos los cambios';
-    saveFloatBtn.style.display = 'none';
-    document.body.appendChild(saveFloatBtn);
-    saveFloatBtn.addEventListener('click', saveAllPredictions);
-  }
-  
-  updateFloatingSaveVisibility();
 }
-
-// ==================== GUARDADO INDIVIDUAL ====================
 
 async function savePrediction(matchId) {
   if (!isPaymentApproved()) {
@@ -585,79 +468,11 @@ async function savePrediction(matchId) {
       puntos_ganados: 0,
       fecha_registro: serverTimestamp()
     }, { merge: false });
-    
-    markMatchAsModified(matchId);
     alert("Pronóstico guardado correctamente.");
   } catch (error) {
     alert(`Error al guardar: ${error.message}`);
   }
 }
-
-// ==================== GUARDADO MÚLTIPLE ====================
-
-async function saveAllPredictions() {
-  if (!isPaymentApproved()) {
-    alert("❌ Tu pago aún no ha sido aprobado.");
-    return;
-  }
-
-  const modifiedCards = Array.from(document.querySelectorAll('.match-card.modified'));
-  if (!modifiedCards.length) {
-    alert("No hay cambios pendientes para guardar.");
-    return;
-  }
-
-  const confirmSave = confirm(`📋 Vas a guardar ${modifiedCards.length} pronóstico${modifiedCards.length > 1 ? 's' : ''}. ¿Continuar?`);
-  if (!confirmSave) return;
-
-  // Ocultar botón inmediatamente para evitar dobles clics
-  const saveFloatBtn = document.getElementById('saveAllFloatBtn');
-  if (saveFloatBtn) saveFloatBtn.style.display = 'none';
-
-  let successCount = 0;
-  let errorCount = 0;
-
-  for (const card of modifiedCards) {
-    const matchId = card.dataset.matchId;
-    const match = state.partidos.find(p => p.id === matchId);
-    if (!match) continue;
-
-    const countdown = getCountdown(match.fecha_hora.toDate());
-    if (countdown.closed) {
-      errorCount++;
-      continue;
-    }
-
-    const golesLocal = Math.max(0, Number(document.getElementById(`local_${matchId}`).value || 0));
-    const golesVisita = Math.max(0, Number(document.getElementById(`visita_${matchId}`).value || 0));
-
-    try {
-      await setDoc(doc(db, "predicciones", `${state.currentUser.uid}_${matchId}`), {
-        uid: state.currentUser.uid,
-        partidoId: matchId,
-        goles_pred_local: golesLocal,
-        goles_pred_visita: golesVisita,
-        puntos_ganados: 0,
-        fecha_registro: serverTimestamp()
-      }, { merge: false });
-      successCount++;
-      markMatchAsModified(matchId);
-    } catch (error) {
-      console.error(`Error guardando ${match.equipo_local} vs ${match.equipo_visita}:`, error);
-      errorCount++;
-    }
-  }
-
-  if (successCount > 0) {
-    alert(`✅ ${successCount} pronóstico${successCount > 1 ? 's' : ''} guardado${successCount > 1 ? 's' : ''} correctamente.${errorCount > 0 ? ` ⚠️ ${errorCount} no se pudieron guardar (partidos cerrados).` : ''}`);
-  } else if (errorCount > 0) {
-    alert(`❌ No se pudo guardar ningún pronóstico. Verifica que los partidos no estén cerrados.`);
-  }
-  
-  updateFloatingSaveVisibility();
-}
-
-// ==================== RESTO DE FUNCIONES (ranking, admin, etc.) ====================
 
 function sortRanking(arr) {
   return [...arr].sort((a, b) => {
