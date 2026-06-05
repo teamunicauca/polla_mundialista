@@ -796,15 +796,7 @@ async function renderReporte() {
 }
 
 
-// Inicializar selector de fechas para el reporte
-function initReporteFechaSelector() {
-  const selector = document.getElementById("selectorFechaReporte");
-  if (!selector) return;
-  
-  selector.addEventListener("change", () => {
-    renderReporte();
-  });
-}
+
 async function savePrediction(matchId) {
   if (!isPaymentApproved()) {
     alert("Tu pago aún no ha sido aprobado.");
